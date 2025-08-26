@@ -1,12 +1,13 @@
 <template>
   <q-page class="flex" style="height: 100vh; width: 100vw">
     <div class="background">
+      <!-- User Icon -->
       <div class="icon">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="60"
           height="60"
-          fill="#00000"
+          fill="#000000"
           viewBox="0 0 256 256"
         >
           <path
@@ -16,26 +17,27 @@
       </div>
 
       <div class="log">
-        <h4 style="margin: 10px; color: #1d232d; cursor: default">sign in</h4>
+        <h4 style="margin: 10px; color: #1d232d; cursor: default">Login</h4>
         <form class="inputs-div" @submit.prevent="doSubmit">
+          <input v-model="Data.name" type="text" placeholder="Name" />
           <input
             v-model="Data.phone"
             type="number"
-            placeholder=" Phone Number"
+            placeholder="Phone Number"
           />
           <input
             v-model="Data.password"
-            min="8"
             type="password"
-            placeholder=" Password"
+            placeholder="Password"
           />
-          <button class="submit-button" type="submit" @click="adduser">
-            SUBMIT
-          </button>
+          <p v-if="lessnuber" style="color: red; font-size: 0.9em">
+            Password must be at least 8 characters
+          </p>
+          <button class="submit-button" type="submit">SUBMIT</button>
         </form>
       </div>
       <div class="createAccount">
-        <router-link to="/register" class="create-account">
+        <router-link to="/login" class="create-account">
           <h6>create an account</h6>
         </router-link>
       </div>
@@ -48,48 +50,40 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { Notify } from "quasar";
+import { reactive, ref, watch } from "vue";
 
-const router = useRouter();
-
+// Form Data
 const Data = reactive({
+  name: "",
   phone: "",
   password: "",
 });
 
+// Validation State
 const lessnuber = ref(false);
 
+// Live Watch on password
+watch(
+  () => Data.password,
+  (newVal) => {
+    lessnuber.value = newVal.length > 0 && newVal.length < 8;
+  }
+);
+
+// Submit Handler
 function doSubmit() {
   if (Data.password.length < 8) {
     lessnuber.value = true;
-    Notify.create({
-      message: "Password must be at least 8 characters",
-      color: "red",
-    });
     return;
   }
-  console.log(Data);
-  lessnuber.value = false;
-}
+  console.log("Submitted:", Data);
 
-const adduser = () => {
-  const addedNumber = "09059229400";
-  const addedPassword = "tahataha";
-
-  if (Data.phone === addedNumber && Data.password === addedPassword) {
-    router.push("/dashboard");
-  } else {
-    Notify.create({
-      message: "Wrong phone or password",
-      color: "red",
-    });
-  }
-
+  // Reset form
+  Data.name = "";
   Data.phone = "";
   Data.password = "";
-};
+  lessnuber.value = false;
+}
 </script>
 
 <style lang="scss">
