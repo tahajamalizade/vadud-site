@@ -1,24 +1,12 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
+  <q-layout view="lHh Lpr lFf" >
+    <q-header elevated class="bg-blue-9">
       <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-
-        <q-toolbar-title>
-          Quasar App
+        <q-toolbar-title style="cursor: default" class="flex flex-center text-blue-3">
+          Vdud
         </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
       </q-toolbar>
     </q-header>
-
 
     <q-page-container>
       <router-view />
@@ -27,9 +15,10 @@
 </template>
 
 <script setup>
-
 defineOptions({
-  name: 'MainLayout'
-})
-
+  name: "MainLayout",
+});
 </script>
+
+<style>
+</style>

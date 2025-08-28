@@ -1,7 +1,6 @@
 <template>
   <q-page class="flex" style="height: 100vh; width: 100vw">
     <div class="background">
-      <!-- User Icon -->
       <div class="icon">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -17,30 +16,32 @@
       </div>
 
       <div class="log">
-        <h4 style="margin: 10px; color: #1d232d; cursor: default">Login</h4>
-        <form class="inputs-div" @submit.prevent="doSubmit">
-          <input v-model="Data.name" type="text" placeholder="Name" />
+        <h4 style="margin: 10px; color: #1d232d; cursor: default">Register</h4>
+        <form class="inputs-div" @submit.prevent="doRegister">
+          <input v-model="data.name" type="text" placeholder="Name" required />
           <input
-            v-model="Data.phone"
-            type="number"
+            v-model="data.phone"
+            type="tel"
             placeholder="Phone Number"
+            pattern="[0-9]*"
           />
           <input
-            v-model="Data.password"
+            v-model="data.password"
             type="password"
             placeholder="Password"
+            required
           />
-          <p v-if="lessnuber" style="color: red; font-size: 0.9em">
-            Password must be at least 8 characters
-          </p>
-          <button class="submit-button" type="submit">SUBMIT</button>
+
+          <button class="submit-button" type="submit">REGISTER</button>
         </form>
       </div>
+
       <div class="createAccount">
-        <router-link to="/login" class="create-account">
-          <h6>create an account</h6>
+        <router-link to="/" class="create-account">
+          <h6>Already have an account?</h6>
         </router-link>
       </div>
+
       <img
         src="../assets/wp12412873-minimalist-4k-pc-wallpapers.jpg"
         alt="wallpaper"
@@ -50,39 +51,75 @@
 </template>
 
 <script setup>
+import { useQuasar } from "quasar";
 import { reactive, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
-// Form Data
-const Data = reactive({
+const $q = useQuasar();
+
+const router = useRouter();
+
+const data = reactive({
   name: "",
   phone: "",
   password: "",
 });
 
-// Validation State
 const lessnuber = ref(false);
 
-// Live Watch on password
 watch(
-  () => Data.password,
+  () => data.password,
   (newVal) => {
     lessnuber.value = newVal.length > 0 && newVal.length < 8;
+  },
+  () => data.phone,
+  (newVal) => {
+    lessnuber.value = newVal.length > 0 && newVal.length === 11;
   }
 );
 
-// Submit Handler
-function doSubmit() {
-  if (Data.password.length < 8) {
-    lessnuber.value = true;
+function doRegister() {
+  if (data.password.length < 8) {
+    $q.notify({
+      message: " the number should be more that 8",
+      color: "orange",
+      textColor: "black",
+    });
     return;
   }
-  console.log("Submitted:", Data);
+  if (data.phone.length !== 11) {
+    $q.notify({
+      message: "your phone must be 11 number",
+      color: "yellow",
+      textColor: "black",
+    });
+    return;
+  }
 
-  // Reset form
-  Data.name = "";
-  Data.phone = "";
-  Data.password = "";
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+
+  users.push({ ...data });
+  localStorage.setItem("users", JSON.stringify(users));
+
+  if (users.length === 0) {
+    console.log("هیچ کاربری وجود ندارد، ثبت‌نام کنید.");
+  }
+  $q.notify({
+    message: "log in was seceed",
+    color: "green-3",
+    textColor: "black",
+  });
+
+  data.name = "";
+  data.phone = "";
+  data.password = "";
   lessnuber.value = false;
+
+  $q.notify({
+    message: " sign in secceed.",
+    color: "green-3",
+  });
+  router.push("/dashboard");
 }
 </script>
 
@@ -101,6 +138,12 @@ input:hover {
 input:focus {
   outline: none;
   box-shadow: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .submit-button {
@@ -226,22 +269,25 @@ body {
 .createAccount {
   position: absolute;
   z-index: 1;
-  top: 55%;
+  top: 60%;
   left: 36%;
   color: rgb(136, 136, 138);
+  max-height: 30px;
 }
 
 .create-account {
-  display: inline-block;
   color: #007bff;
-  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   transition: color 0.2s;
+  margin-top: 0%;
 }
 
 .create-account:hover {
   color: #0056b3;
   text-decoration: none;
+}
+h6 {
+  margin: 0%;
 }
 </style>

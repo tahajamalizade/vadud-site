@@ -6,7 +6,7 @@
           xmlns="http://www.w3.org/2000/svg"
           width="60"
           height="60"
-          fill="#00000"
+          fill="#000000"
           viewBox="0 0 256 256"
         >
           <path
@@ -16,29 +16,31 @@
       </div>
 
       <div class="log">
-        <h4 style="margin: 10px; color: #1d232d; cursor: default">sign in</h4>
-        <form class="inputs-div" @submit.prevent="doSubmit">
+        <h4 style="margin: 10px; color: #1d232d; cursor: default">Login</h4>
+        <form class="inputs-div" @submit.prevent="doLog">
           <input
-            v-model="Data.phone"
-            type="number"
-            placeholder=" Phone Number"
+            v-model="loginData.phone"
+            type="tel"
+            placeholder="Phone Number"
+            required
+            pattern="[0-9]*"
           />
           <input
-            v-model="Data.password"
-            min="8"
+            v-model="loginData.password"
             type="password"
-            placeholder=" Password"
+            placeholder="Password"
+            required
           />
-          <button class="submit-button" type="submit" @click="adduser">
-            SUBMIT
-          </button>
+          <button class="submit-button" type="submit">LOGIN</button>
         </form>
       </div>
+
       <div class="createAccount">
         <router-link to="/register" class="create-account">
-          <h6>create an account</h6>
+          <h6>Don't have an account?</h6>
         </router-link>
       </div>
+
       <img
         src="../assets/wp12412873-minimalist-4k-pc-wallpapers.jpg"
         alt="wallpaper"
@@ -48,48 +50,43 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import { Notify } from "quasar";
+import { useQuasar } from "quasar";
 
 const router = useRouter();
+const $q = useQuasar();
 
-const Data = reactive({
+const loginData = reactive({
   phone: "",
   password: "",
 });
 
-const lessnuber = ref(false);
+function doLog() {
+  const users = JSON.parse(localStorage.getItem("users")) || [];
 
-function doSubmit() {
-  if (Data.password.length < 8) {
-    lessnuber.value = true;
-    Notify.create({
-      message: "Password must be at least 8 characters",
-      color: "red",
+  const user = users.find(
+    (u) => u.phone === loginData.phone && u.password === loginData.password
+  );
+
+  if (user) {
+    $q.notify({
+      message: "Login succeded boyy",
+      color: "green-3",
+      textColor: "black",
     });
-    return;
-  }
-  console.log(Data);
-  lessnuber.value = false;
-}
-
-const adduser = () => {
-  const addedNumber = "09059229400";
-  const addedPassword = "tahataha";
-
-  if (Data.phone === addedNumber && Data.password === addedPassword) {
     router.push("/dashboard");
   } else {
-    Notify.create({
-      message: "Wrong phone or password",
+    $q.notify({
+      message: "number or pass is wrong",
       color: "red",
+      textColor: "white",
     });
   }
 
-  Data.phone = "";
-  Data.password = "";
-};
+  loginData.phone = "";
+  loginData.password = "";
+}
 </script>
 
 <style lang="scss">
@@ -107,6 +104,11 @@ input:hover {
 input:focus {
   outline: none;
   box-shadow: none;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .submit-button {
@@ -232,7 +234,7 @@ body {
 .createAccount {
   position: absolute;
   z-index: 1;
-  top: 55%;
+  top: 60%;
   left: 36%;
   color: rgb(136, 136, 138);
 }
