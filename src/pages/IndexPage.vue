@@ -70,6 +70,7 @@ function doLog() {
   );
 
   if (user) {
+    localStorage.setItem("userLoggedIn", "true");
     $q.notify({
       message: "Login succeded boyy",
       color: "green-3",

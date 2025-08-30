@@ -11,6 +11,12 @@ const routes = [
       {
         path: "/dashboard",
         component: () => import("pages/dashboardPage.vue"),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "/project/:id",
+        component: () => import("pages/projectID.vue"),
+        meta: { requiresAuth: true },
       },
     ],
   },

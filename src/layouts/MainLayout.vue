@@ -1,8 +1,11 @@
 <template>
-  <q-layout view="lHh Lpr lFf" >
-    <q-header elevated class="bg-blue-9">
+  <q-layout view="lHh Lpr lFf">
+    <q-header elevated class="bg-purple-7">
       <q-toolbar>
-        <q-toolbar-title style="cursor: default" class="flex flex-center text-blue-3">
+        <q-toolbar-title
+          style="cursor: default"
+          class="flex flex-center text-purple-2"
+        >
           Vdud
         </q-toolbar-title>
       </q-toolbar>
@@ -20,5 +23,4 @@ defineOptions({
 });
 </script>
 
-<style>
-</style>
+<style></style>
