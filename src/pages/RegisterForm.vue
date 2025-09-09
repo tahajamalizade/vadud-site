@@ -42,13 +42,12 @@
 
 <script setup>
 import { useQuasar } from "quasar";
-import { reactive, ref, watch } from "vue";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "src/store/authStore";
 
 const auth = useAuthStore();
 const $q = useQuasar();
-
 const router = useRouter();
 
 const data = reactive({
@@ -56,43 +55,37 @@ const data = reactive({
   email: "",
   password: "",
 });
-console.log(auth);
+
 function doRegister() {
   if (data.password.length < 8) {
     $q.notify({
-      message: " the number should be more that 8",
+      message: "Password should be at least 8 characters long.",
       color: "orange",
       textColor: "black",
     });
     return;
   }
 
-  return;
+  let users = JSON.parse(localStorage.getItem("users")) || [];
+  users.push({
+    name: data.name,
+    email: data.email,
+    password: data.password,
+  });
+  localStorage.setItem("users", JSON.stringify(users));
+
+  $q.notify({
+    message: "Registration was successful!",
+    color: "green-4",
+    textColor: "white",
+  });
+
+  data.name = "";
+  data.email = "";
+  data.password = "";
+
+  router.push("/dashboard");
 }
-
-let users = JSON.parse(localStorage.getItem("users")) || [];
-
-users.push({ ...data });
-localStorage.setItem("users", JSON.stringify(users));
-
-if (users.length === 0) {
-  console.log("هیچ کاربری وجود ندارد، ثبت‌نام کنید.");
-}
-$q.notify({
-  message: "log in was seceed",
-  color: "green-3",
-  textColor: "black",
-});
-
-data.name = "";
-data.email = "";
-data.password = "";
-
-router.push("/dashboard");
-$q.notify({
-  message: " sign in secceed.",
-  color: "green-3",
-});
 </script>
 
 <style lang="scss">
