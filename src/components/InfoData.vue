@@ -1,7 +1,7 @@
 <template>
   <q-card
-    class="my-card text-black"
-    style="background-color: azure; width: 14vw"
+    class="my-card text-black shadow-8 rounded-borders"
+    style="background-color: azure; width: 14vw; border-radius: 30px"
   >
     <q-card-section>
       <div class="text">

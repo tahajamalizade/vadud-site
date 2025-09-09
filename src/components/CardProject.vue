@@ -1,6 +1,6 @@
 <template>
   <q-card
-    class="my-card"
+    class="shadow-20 rounded-borders"
     style="width: 300px; border-radius: 15px; cursor: pointer"
     @click="$emit('open', project.id)"
   >

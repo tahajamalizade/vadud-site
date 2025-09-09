@@ -19,18 +19,8 @@
         <h4 style="margin: 10px; color: #1d232d; cursor: default">Register</h4>
         <form class="inputs-div" @submit.prevent="doRegister">
           <input v-model="data.name" type="text" placeholder="Name" required />
-          <input
-            v-model="data.phone"
-            type="tel"
-            placeholder="Phone Number"
-            pattern="[0-9]*"
-          />
-          <input
-            v-model="data.password"
-            type="password"
-            placeholder="Password"
-            required
-          />
+          <input v-model="data.email" type="email" placeholder="email" />
+          <input v-model="data.password" placeholder="Password" required />
 
           <button class="submit-button" type="submit">REGISTER</button>
         </form>
@@ -54,30 +44,19 @@
 import { useQuasar } from "quasar";
 import { reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "src/store/authStore";
 
+const auth = useAuthStore();
 const $q = useQuasar();
 
 const router = useRouter();
 
 const data = reactive({
   name: "",
-  phone: "",
+  email: "",
   password: "",
 });
-
-const lessnuber = ref(false);
-
-watch(
-  () => data.password,
-  (newVal) => {
-    lessnuber.value = newVal.length > 0 && newVal.length < 8;
-  },
-  () => data.phone,
-  (newVal) => {
-    lessnuber.value = newVal.length > 0 && newVal.length === 11;
-  }
-);
-
+console.log(auth);
 function doRegister() {
   if (data.password.length < 8) {
     $q.notify({
@@ -87,40 +66,33 @@ function doRegister() {
     });
     return;
   }
-  if (data.phone.length !== 11) {
-    $q.notify({
-      message: "your phone must be 11 number",
-      color: "yellow",
-      textColor: "black",
-    });
-    return;
-  }
 
-  let users = JSON.parse(localStorage.getItem("users")) || [];
-
-  users.push({ ...data });
-  localStorage.setItem("users", JSON.stringify(users));
-
-  if (users.length === 0) {
-    console.log("هیچ کاربری وجود ندارد، ثبت‌نام کنید.");
-  }
-  $q.notify({
-    message: "log in was seceed",
-    color: "green-3",
-    textColor: "black",
-  });
-
-  data.name = "";
-  data.phone = "";
-  data.password = "";
-  lessnuber.value = false;
-
-  $q.notify({
-    message: " sign in secceed.",
-    color: "green-3",
-  });
-  router.push("/dashboard");
+  return;
 }
+
+let users = JSON.parse(localStorage.getItem("users")) || [];
+
+users.push({ ...data });
+localStorage.setItem("users", JSON.stringify(users));
+
+if (users.length === 0) {
+  console.log("هیچ کاربری وجود ندارد، ثبت‌نام کنید.");
+}
+$q.notify({
+  message: "log in was seceed",
+  color: "green-3",
+  textColor: "black",
+});
+
+data.name = "";
+data.email = "";
+data.password = "";
+
+router.push("/dashboard");
+$q.notify({
+  message: " sign in secceed.",
+  color: "green-3",
+});
 </script>
 
 <style lang="scss">

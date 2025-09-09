@@ -19,9 +19,9 @@
         <h4 style="margin: 10px; color: #1d232d; cursor: default">Login</h4>
         <form class="inputs-div" @submit.prevent="doLog">
           <input
-            v-model="loginData.phone"
-            type="tel"
-            placeholder="Phone Number"
+            v-model="loginData.email"
+            type="email"
+            placeholder="email"
             required
             pattern="[0-9]*"
           />
@@ -58,35 +58,28 @@ const router = useRouter();
 const $q = useQuasar();
 
 const loginData = reactive({
-  phone: "",
+  email: "",
   password: "",
 });
 
-function doLog() {
-  const users = JSON.parse(localStorage.getItem("users")) || [];
+async function doLog() {
+  try {
+    await authStore.loginUser({ ...loginData });
 
-  const user = users.find(
-    (u) => u.phone === loginData.phone && u.password === loginData.password
-  );
-
-  if (user) {
-    localStorage.setItem("userLoggedIn", "true");
     $q.notify({
-      message: "Login succeded boyy",
+      message: "Login succeeded!",
       color: "green-3",
       textColor: "black",
     });
+
     router.push("/dashboard");
-  } else {
+  } catch (err) {
     $q.notify({
-      message: "number or pass is wrong",
+      message: err.response?.data?.message || "email or password is wrong",
       color: "red",
       textColor: "white",
     });
   }
-
-  loginData.phone = "";
-  loginData.password = "";
 }
 </script>
 

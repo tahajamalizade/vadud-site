@@ -1,60 +1,68 @@
 <template>
-  <q-page class="q-pa-md bg-grey-2">
-    <div>
-      <h4 class="flex flex-center">project management</h4>
-      <div class="text-h5"></div>
-      <q-space />
+  <q-page class="q-pa-md bg-grey-1">
+    <!-- Header -->
+    <div class="text-center q-mb-md">
+      <h4 class="q-mt-none q-mb-sm">Project Management</h4>
     </div>
 
-    <q-card class="q-pa-md q-mb-md">
-      <div class="flex row flex-center q-gutter-sm">
+    <q-card flat bordered class="q-pa-md q-mb-md rounded-borders shadow-20">
+      <div class="flex flex-center row items-center q-gutter-sm q-ma-md">
         <q-input
           v-model="newColumnTitle"
-          label="New column title"
+          label="New column"
           dense
           outlined
-          class="col-12 col-sm-4"
+          class="col-12 col-sm-4 shadow-20 rounded-borders"
         />
         <q-btn
-          color="purple-3"
+          color="purple-5"
+          class="shadow-20 rounded-borders"
+          flat
           icon="add"
-          label="Add Column"
+          label="Add"
           @click="addColumn"
         />
       </div>
     </q-card>
 
+    <!-- Kanban Board -->
     <div class="row q-col-gutter-md no-wrap scroll" style="overflow-x: auto">
       <div
-        v-for="col in columns"
+        v-for="(col, index) in columns"
         :key="col.id"
         class="col-12 col-sm-6 col-md-4 col-lg-3"
-        style="min-width: 320px"
+        :style="{ minWidth: '280px' }"
       >
-        <q-card class="column-card q-pa-sm">
-          <div class="row items-center q-gutter-sm q-mb-sm">
+        <q-card
+          flat
+          class="q-pa-sm rounded-borders column-card"
+          :style="{
+            backgroundColor: columnColors[index % columnColors.length],
+          }"
+        >
+          <div class="row items-center q-mb-sm">
             <q-input
               v-model="col.title"
               dense
-              standout="bg-grey-3"
-              class="col"
+              borderless
+              class="col text-bold"
               @blur="persist"
             />
-            <q-btn dense round flat icon="more_vert">
+            <q-btn dense flat round color="purple-6" icon="more_vert" size="sm">
               <q-menu>
-                <q-list style="min-width: 180px">
+                <q-list style="min-width: 160px">
                   <q-item clickable v-close-popup @click="renameColumn(col)">
-                    <q-item-section avatar
-                      ><q-icon name="edit"
-                    /></q-item-section>
+                    <q-item-section avatar>
+                      <q-icon name="edit" />
+                    </q-item-section>
                     <q-item-section>Rename</q-item-section>
                   </q-item>
                   <q-item clickable v-close-popup @click="removeColumn(col.id)">
-                    <q-item-section avatar
-                      ><q-icon name="delete"
-                    /></q-item-section>
+                    <q-item-section avatar>
+                      <q-icon name="delete" />
+                    </q-item-section>
                     <q-item-section class="text-negative"
-                      >Delete column</q-item-section
+                      >Delete</q-item-section
                     >
                   </q-item>
                 </q-list>
@@ -62,49 +70,45 @@
             </q-btn>
           </div>
 
-          <!-- Add task -->
           <q-form @submit.prevent="addTask(col.id)">
             <div class="row items-center q-gutter-sm q-mb-sm">
               <q-input
                 v-model="newTaskTitle[col.id]"
                 dense
                 outlined
-                placeholder="Task title"
+                placeholder="New task..."
                 class="col"
               />
-              <q-btn type="submit" color="purple-4" dense icon="add" />
+              <q-btn type="submit" flat dense icon="add" color="purple-4" />
             </div>
           </q-form>
 
-          <q-separator class="q-my-sm" />
-
+          <!-- Tasks -->
           <draggable
             v-model="col.tasks"
             group="kanban"
             item-key="id"
-            class="column-tasks q-gutter-sm"
+            class="column-tasks q-gutter-sm q-pa-md"
             @end="persist"
           >
             <template #item="{ element: task }">
               <q-card
-                style="cursor: pointer"
-                class="q-pa-sm"
+                flat
+                bordered
+                class="q-pa-sm rounded-borders cursor-pointer bg-white"
                 @click="openTask(task)"
               >
-                <div class="row items-center">
-                  <div class="col">
-                    <div class="text-subtitle2">{{ task.title }}</div>
-                  </div>
-                  <div class="row items-center q-gutter-xs">
-                    <q-btn
-                      dense
-                      round
-                      flat
-                      icon="delete"
-                      color="red-4"
-                      @click.stop="removeTask(col.id, task.id)"
-                    />
-                  </div>
+                <div class="row items-center justify-between">
+                  <div class="text-body2">{{ task.title }}</div>
+                  <q-btn
+                    dense
+                    flat
+                    round
+                    icon="delete"
+                    color="negative"
+                    size="sm"
+                    @click.stop="removeTask(col.id, task.id)"
+                  />
                 </div>
               </q-card>
             </template>
@@ -114,46 +118,105 @@
     </div>
   </q-page>
   <q-dialog v-model="taskopen">
-    <q-card style="min-width: 400px">
-      <q-card-section>
-        <div class="text-h6">task:{{ selecttass?.title }}</div>
-      </q-card-section>
-      <div class="felx flex-center row" style="justify-content: space-evenly">
-        <q-input
-          rounded
-          standout
-          dense
-          v-model="ronaldo"
-          label="description"
-          color="purple-4"
-          bg-color="white"
-          class="q-mt-md"
-          input-class="text-black"
-        />
-        <q-btn color="purple-4" @click="saveDes">+</q-btn>
-      </div>
+    <q-card flat bordered style="min-width: 400px" class="rounded-borders">
+      <q-card-section class="q-pa-lg">
+        <div class="text-h6 text-purple-6 q-pa-md">
+          <p >task:{{ selecttass.title }}</p>
+        </div>
 
-      <q-card-section>
-        <p>{{ messi || "No description" }}</p>
-      </q-card-section>
-      <q-card-actions align="right">
-        <q-btn
-          flat
-          label="Close"
-          color="primary"
-          v-close-popup
-          @click="taskopen = false"
+
+        <q-input
+          dense
+          outlined
+          v-model="selecttass.title"
+          label="Title"
+          class="q-mb-sm"
         />
+
+        <q-input
+          dense
+          outlined
+          v-model="selecttass.description"
+          label="Description"
+          autogrow
+          type="textarea"
+          class="q-mb-sm"
+        />
+
+        <div class="row q-col-gutter-md q-mb-sm">
+          <q-select
+            dense
+            outlined
+            v-model="selecttass.status"
+            :options="['Backlog', 'In Progress', 'Done']"
+            label="Status"
+            class="col-6"
+          />
+          <q-select
+            dense
+            outlined
+            v-model="selecttass.priority"
+            :options="['Low', 'Medium', 'High']"
+            label="Priority"
+            class="col-6"
+          />
+        </div>
+
+        <q-input
+          dense
+          outlined
+          v-model="selecttass.assignee"
+          label="Assignee"
+          class="q-mb-sm"
+        />
+
+        <q-input
+          dense
+          outlined
+          v-model="selecttass.dueDate"
+          label="Due Date"
+          mask="####-##-##"
+          hint="Format: YYYY-MM-DD"
+          class="q-mb-sm"
+        >
+          <template v-slot:append>
+            <q-icon name="event" class="cursor-pointer">
+              <q-popup-proxy
+                cover
+                transition-show="scale"
+                transition-hide="scale"
+              >
+                <q-date v-model="selecttass.dueDate" mask="YYYY-MM-DD" />
+              </q-popup-proxy>
+            </q-icon>
+          </template>
+        </q-input>
+
+        <q-input
+          dense
+          outlined
+          v-model="selecttass.comments"
+          label="Comments"
+          autogrow
+          type="textarea"
+          class="q-mb-sm"
+        />
+      </q-card-section>
+
+      <q-card-actions align="right">
+        <q-btn flat label="Close" v-close-popup />
+        <q-btn flat label="Save" color="primary" @click="saveTask" />
       </q-card-actions>
     </q-card>
   </q-dialog>
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from "vue";
+import { ref, reactive, watch } from "vue";
 import { uid, useQuasar } from "quasar";
 import draggable from "vuedraggable";
 import { useRoute } from "vue-router";
+import { color } from "chart.js/helpers";
 
 const $q = useQuasar();
 const route = useRoute();
@@ -165,33 +228,18 @@ const selecttass = ref(null);
 const openTask = (task) => {
   selecttass.value = task;
   taskopen.value = true;
-  console.log("Task opened:", task.title);
 };
+
 const STORAGE_KEY = `kanban_board_project_${projectId}`;
 
 function load() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-const ronaldo = ref("");
-const messi = ref("");
-
-onMounted(() => {
-  const saved = localStorage.getItem("messi");
-  if (saved) {
-    messi.value = saved;
-    ronaldo.value = saved;
-  }
-});
-
-const saveDes = () => {
-  messi.value = ronaldo.value;
-  localStorage.setItem("messi", ronaldo.value);
-};
 const columns = ref(
   load() || [
     { id: uid(), title: "Backlog", tasks: [] },
@@ -213,28 +261,11 @@ watch(
 
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(columns.value));
-  $q.notify({
-    message: "Saved",
-    timeout: 800,
-    icon: "check_circle",
-    color: "positive",
-  });
-}
-
-function clearAll() {
-  $q.dialog({
-    title: "Clear board",
-    message: "Remove all columns and tasks?",
-    cancel: true,
-    persistent: true,
-  }).onOk(() => {
-    columns.value = [];
-    persist();
-  });
+  $q.notify({ message: "Saved", color: "positive", icon: "check_circle" });
 }
 
 function addColumn() {
-  const title = (newColumnTitle.value || "").trim();
+  const title = newColumnTitle.value.trim();
   if (!title)
     return $q.notify({ type: "warning", message: "Column title is required" });
   columns.value.push({ id: uid(), title, tasks: [] });
@@ -250,13 +281,11 @@ function renameColumn(col) {
     title: "Rename column",
     prompt: { model: col.title, type: "text" },
     cancel: true,
-  }).onOk((val) => {
-    col.title = val;
-  });
+  }).onOk((val) => (col.title = val));
 }
 
 function addTask(columnId) {
-  const title = (newTaskTitle[columnId] || "").trim();
+  const title = newTaskTitle[columnId]?.trim();
   if (!title) return;
   const col = columns.value.find((c) => c.id === columnId);
   if (!col) return;
@@ -269,21 +298,25 @@ function removeTask(columnId, taskId) {
   if (!col) return;
   col.tasks = col.tasks.filter((t) => t.id !== taskId);
 }
+
+function saveTask() {
+  persist();
+}
+
+const columnColors = ["#ffe0b2", "#c8e6c9", "#bbdefb", "#f8bbd0", "#d1c4e9"];
 </script>
 
 <style scoped>
 .column-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 12px;
 }
+
 .column-tasks {
   min-height: 40px;
 }
-.ellipsis-2-lines {
-  display: -webkit-box;
 
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.q-btn {
+  border-radius: 10px;
 }
 </style>
