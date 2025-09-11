@@ -2,25 +2,25 @@
   <q-page class="flex" style="height: 100vh; width: 100vw">
     <div class="background">
       <div class="icon">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="60"
-          height="60"
-          fill="#000000"
-          viewBox="0 0 256 256"
-        >
-          <path
-            d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24ZM74.08,197.5a64,64,0,0,1,107.84,0,87.83,87.83,0,0,1-107.84,0ZM96,120a32,32,0,1,1,32,32A32,32,0,0,1,96,120Zm97.76,66.41a79.66,79.66,0,0,0-36.06-28.75,48,48,0,1,0-59.4,0,79.66,79.66,0,0,0-36.06,28.75,88,88,0,1,1,131.52,0Z"
-          ></path>
-        </svg>
+        <!-- همون آیکن -->
       </div>
 
       <div class="log">
         <h4 style="margin: 10px; color: #1d232d; cursor: default">Register</h4>
         <form class="inputs-div" @submit.prevent="doRegister">
           <input v-model="data.name" type="text" placeholder="Name" required />
-          <input v-model="data.email" type="email" placeholder="email" />
-          <input v-model="data.password" placeholder="Password" required />
+          <input
+            v-model="data.email"
+            type="email"
+            placeholder="Email"
+            required
+          />
+          <input
+            v-model="data.password"
+            type="password"
+            placeholder="Password"
+            required
+          />
 
           <button class="submit-button" type="submit">REGISTER</button>
         </form>
@@ -44,9 +44,11 @@
 import { useQuasar } from "quasar";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "src/store/authStore";
 
+// for state managment PINIA
+import { useAuthStore } from "src/store/authStore";
 const auth = useAuthStore();
+
 const $q = useQuasar();
 const router = useRouter();
 
@@ -56,7 +58,7 @@ const data = reactive({
   password: "",
 });
 
-function doRegister() {
+async function doRegister() {
   if (data.password.length < 8) {
     $q.notify({
       message: "Password should be at least 8 characters long.",
@@ -66,25 +68,26 @@ function doRegister() {
     return;
   }
 
-  let users = JSON.parse(localStorage.getItem("users")) || [];
-  users.push({
-    name: data.name,
-    email: data.email,
-    password: data.password,
-  });
-  localStorage.setItem("users", JSON.stringify(users));
+  try {
+    await auth.register({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+    });
 
-  $q.notify({
-    message: "Registration was successful!",
-    color: "green-4",
-    textColor: "white",
-  });
-
-  data.name = "";
-  data.email = "";
-  data.password = "";
-
-  router.push("/dashboard");
+    $q.notify({
+      message: "Registration was great boyy!",
+      color: "green-4",
+      textColor: "green-4",
+    });
+    router.push("/dashboard");
+  } catch (err) {
+    $q.notify({
+      message: err.message || "failed man  damn!",
+      color: "red",
+      textColor: "red",
+    });
+  }
 }
 </script>
 

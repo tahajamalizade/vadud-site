@@ -2,6 +2,7 @@
   <q-page class="flex" style="height: 100vh; width: 100vw">
     <div class="background">
       <div class="icon">
+        <!-- Your SVG icon -->
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="60"
@@ -17,13 +18,12 @@
 
       <div class="log">
         <h4 style="margin: 10px; color: #1d232d; cursor: default">Login</h4>
-        <form class="inputs-div" @submit.prevent="doLog">
+        <form class="inputs-div" @submit.prevent="doLogin">
           <input
             v-model="loginData.email"
             type="email"
-            placeholder="email"
+            placeholder="Email"
             required
-            pattern="[0-9]*"
           />
           <input
             v-model="loginData.password"
@@ -31,7 +31,10 @@
             placeholder="Password"
             required
           />
-          <button class="submit-button" type="submit">LOGIN</button>
+          <button class="submit-button" type="submit" :disabled="isLoading">
+            <span v-if="isLoading">Loading...</span>
+            <span v-else>LOGIN</span>
+          </button>
         </form>
       </div>
 
@@ -53,29 +56,32 @@
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import { useQuasar } from "quasar";
+import { useAuthStore } from "src/store/authStore";
 
 const router = useRouter();
 const $q = useQuasar();
+const authStore = useAuthStore();
 
 const loginData = reactive({
   email: "",
   password: "",
 });
+async function doLogin() {
+  if (!loginData.email || !loginData.password) return;
 
-async function doLog() {
   try {
-    await authStore.loginUser({ ...loginData });
+    await authStore.login({ ...loginData });
 
     $q.notify({
       message: "Login succeeded!",
-      color: "green-3",
-      textColor: "black",
+      color: "green-4",
+      textColor: "white",
     });
 
     router.push("/dashboard");
   } catch (err) {
     $q.notify({
-      message: err.response?.data?.message || "email or password is wrong",
+      message: err.message || "Email or password is wrong",
       color: "red",
       textColor: "white",
     });
@@ -171,17 +177,20 @@ input::-webkit-inner-spin-button {
   top: 0;
   border-radius: 10px;
 }
+
 html,
 body {
   margin: 0;
   padding: 0;
   overflow: hidden;
 }
+
 .background {
   width: 100%;
   height: 100vh;
   overflow: hidden;
 }
+
 .background img {
   width: 100%;
   height: 100%;
@@ -190,6 +199,7 @@ body {
   position: relative;
   opacity: 0.95;
 }
+
 .log {
   display: flex;
   align-items: center;
@@ -211,6 +221,7 @@ body {
   -webkit-backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
+
 .inputs-div {
   display: flex;
   height: 20vh;
@@ -219,12 +230,14 @@ body {
   text-align: center;
   justify-content: space-between;
 }
+
 .icon {
   position: absolute;
   z-index: 1;
   top: 17%;
   left: 48%;
 }
+
 .createAccount {
   position: absolute;
   z-index: 1;

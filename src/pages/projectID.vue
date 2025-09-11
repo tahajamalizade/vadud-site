@@ -121,9 +121,8 @@
     <q-card flat bordered style="min-width: 400px" class="rounded-borders">
       <q-card-section class="q-pa-lg">
         <div class="text-h6 text-purple-6 q-pa-md">
-          <p >task:{{ selecttass.title }}</p>
+          <p>task:{{ selecttass.title }}</p>
         </div>
-
 
         <q-input
           dense
@@ -148,7 +147,7 @@
             dense
             outlined
             v-model="selecttass.status"
-            :options="['Backlog', 'In Progress', 'Done']"
+            :options="['TODO', 'IN_PROGRESS', 'DONE']"
             label="Status"
             class="col-6"
           />
@@ -212,11 +211,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from "vue";
+import { ref, reactive, watch, onMounted } from "vue";
 import { uid, useQuasar } from "quasar";
 import draggable from "vuedraggable";
 import { useRoute } from "vue-router";
-import { color } from "chart.js/helpers";
+import { useTaskStore } from "../store/tasksStore"; // Adjust the path as needed
 
 const $q = useQuasar();
 const route = useRoute();
@@ -225,58 +224,88 @@ const projectId = route.params.id;
 const taskopen = ref(false);
 const selecttass = ref(null);
 
-const openTask = (task) => {
-  selecttass.value = task;
-  taskopen.value = true;
-};
+// 1. Initialize the Pinia store
+const taskStore = useTaskStore();
 
-const STORAGE_KEY = `kanban_board_project_${projectId}`;
-
-function load() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-  } catch {
-    return null;
-  }
-}
-
-const columns = ref(
-  load() || [
-    { id: uid(), title: "Backlog", tasks: [] },
-    { id: uid(), title: "In Progress", tasks: [] },
-    { id: uid(), title: "Done", tasks: [] },
-  ]
-);
+// Reactive reference for columns, will be populated from the store
+const columns = ref([
+  { id: "TODO", title: "TODO", tasks: [] },
+  { id: "IN_PROGRESS", title: "IN_PROGRESS", tasks: [] },
+  { id: "DONE", title: "DONE", tasks: [] },
+]);
 
 const newColumnTitle = ref("");
 const newTaskTitle = reactive({});
 
+// 2. Fetch tasks when the component is mounted
+onMounted(async () => {
+  if (projectId) {
+    try {
+      // Use the fetchTasks action from the store
+      await taskStore.fetchTasks(projectId);
+      // Group the fetched tasks into columns
+      groupTasksByStatus();
+    } catch (error) {
+      $q.notify({
+        type: "negative",
+        message: "Failed to load tasks.",
+      });
+    }
+  }
+});
+
+// Watch for changes in the store's tasks and re-group them
 watch(
-  columns,
+  () => taskStore.tasks,
   () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(columns.value));
+    groupTasksByStatus();
   },
   { deep: true }
 );
 
+// Helper function to group tasks by their status
+function groupTasksByStatus() {
+  // Clear existing tasks from local columns
+  columns.value.forEach((col) => (col.tasks = []));
+
+  // Group tasks from the store into the appropriate column
+  taskStore.tasks.forEach((task) => {
+    const col = columns.value.find(
+      (c) =>
+        c.title.toLowerCase().replace(" ", "-") ===
+        task.status.toLowerCase().replace(" ", "-")
+    );
+    if (col) {
+      col.tasks.push(task);
+    }
+  });
+}
+
 function persist() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(columns.value));
+  // The 'persist' function is no longer needed in its old form because
+  // changes are now persisted via GraphQL mutations.
+  // We can use it to notify the user.
   $q.notify({ message: "Saved", color: "positive", icon: "check_circle" });
 }
 
-function addColumn() {
+async function addColumn() {
   const title = newColumnTitle.value.trim();
   if (!title)
     return $q.notify({ type: "warning", message: "Column title is required" });
+
+  // Note: Your GraphQL schema doesn't seem to have a mutation for adding columns.
+  // This logic will still rely on local state for now.
   columns.value.push({ id: uid(), title, tasks: [] });
   newColumnTitle.value = "";
 }
 
 function removeColumn(id) {
+  // Similarly, no GraphQL mutation for this.
   columns.value = columns.value.filter((c) => c.id !== id);
 }
 
 function renameColumn(col) {
+  // No GraphQL mutation for this either.
   $q.dialog({
     title: "Rename column",
     prompt: { model: col.title, type: "text" },
@@ -284,23 +313,86 @@ function renameColumn(col) {
   }).onOk((val) => (col.title = val));
 }
 
-function addTask(columnId) {
+async function addTask(columnId) {
   const title = newTaskTitle[columnId]?.trim();
   if (!title) return;
   const col = columns.value.find((c) => c.id === columnId);
   if (!col) return;
-  col.tasks.push({ id: uid(), title, description: "" });
-  newTaskTitle[columnId] = "";
+
+  try {
+    // 3. Call the createTask action from the store
+    const newTask = await taskStore.createTask({
+      projectId,
+      input: {
+        title,
+        status: col.title,
+      },
+    });
+    // The task will be automatically added to the store and the watcher will update the view.
+    newTaskTitle[columnId] = "";
+    $q.notify({ type: "positive", message: "Task created successfully." });
+  } catch (error) {
+    $q.notify({ type: "negative", message: "Failed to create task." });
+  }
 }
 
-function removeTask(columnId, taskId) {
-  const col = columns.value.find((c) => c.id === columnId);
-  if (!col) return;
-  col.tasks = col.tasks.filter((t) => t.id !== taskId);
+async function removeTask(columnId, taskId) {
+  try {
+    // 4. Call the deleteTask action from the store
+    await taskStore.deleteTask(taskId);
+    $q.notify({ type: "positive", message: "Task deleted successfully." });
+  } catch (error) {
+    $q.notify({ type: "negative", message: "Failed to delete task." });
+  }
 }
 
-function saveTask() {
-  persist();
+function openTask(task) {
+  selecttass.value = { ...task }; // Use a copy to avoid immediate mutation
+  taskopen.value = true;
+}
+
+async function saveTask() {
+  if (!selecttass.value || !selecttass.value.id) return;
+  try {
+    // 5. Call the updateTask action from the store
+    await taskStore.updateTask({
+      taskId: selecttass.value.id,
+      input: {
+        title: selecttass.value.title,
+        description: selecttass.value.description,
+        status: selecttass.value.status,
+      },
+    });
+    taskopen.value = false;
+    $q.notify({ type: "positive", message: "Task updated successfully." });
+  } catch (error) {
+    $q.notify({ type: "negative", message: "Failed to save changes." });
+  }
+}
+
+// 6. Handle drag-and-drop
+async function onDragEnd(event) {
+  // This event is from the draggable component.
+  // It provides the new list, the old index, and the new index.
+  // We need to find the moved task and update its status.
+  const updatedColumns = columns.value;
+  const movedTask = updatedColumns
+    .map((col) => col.tasks)
+    .flat()
+    .find((task) => task.id === event.item.dataset.taskId);
+  const newColumn = updatedColumns.find((col) => col.tasks.includes(movedTask));
+
+  if (movedTask && newColumn) {
+    try {
+      await taskStore.updateTask({
+        taskId: movedTask.id,
+        input: { status: newColumn.title },
+      });
+      $q.notify({ type: "positive", message: "Task status updated." });
+    } catch (error) {
+      $q.notify({ type: "negative", message: "Failed to update task status." });
+    }
+  }
 }
 
 const columnColors = ["#ffe0b2", "#c8e6c9", "#bbdefb", "#f8bbd0", "#d1c4e9"];
