@@ -5,11 +5,15 @@ export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
     token: localStorage.getItem("token") || null,
+    users: [], // Add this line to store all users
   }),
 
   getters: {
     isLoggedIn(state) {
       return !!state.token;
+    },
+    getUsers(state) {
+      return state.users;
     },
   },
 
@@ -71,15 +75,6 @@ export const useAuthStore = defineStore("auth", {
       localStorage.setItem("token", this.token);
     },
 
-    /**
-     * This query fetches all teams and their members.
-     * It then flattens the list to return a unique array of all users.
-     */
-
-
-    /**
-     * Fetches the current authenticated user's details.
-     */
     async fetchMe() {
       const query = gql`
         query GetMe {
@@ -103,6 +98,48 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
+    // Add this new action to fetch all users
+    async fetchAllUsers() {
+      const query = gql`
+        query GetAllUsers {
+          users {
+            id
+            name
+            email
+            role
+          }
+        }
+      `;
+      try {
+        const response = await this.getClient().request(query);
+        this.users = response.users;
+      } catch (error) {
+        console.error("Error fetching all users:", error);
+        throw error; // Rethrow the error to be caught by the component
+      }
+    },
+
+    async updateUserRole(userId, newRole) {
+      const mutation = gql`
+        mutation UpdateUserRole($userId: ID!, $newRole: Role!) {
+          updateUserRole(userId: $userId, newRole: $newRole) {
+            id
+            role
+          }
+        }
+      `;
+      const variables = {
+        userId,
+        newRole,
+      };
+
+      await this.getClient().request(mutation, variables);
+      // You can also update the local store state here if needed
+      const userToUpdate = this.users.find((user) => user.id === userId);
+      if (userToUpdate) {
+        userToUpdate.role = newRole;
+      }
+    },
 
     checkAuth() {
       const token = localStorage.getItem("token");

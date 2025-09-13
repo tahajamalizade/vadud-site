@@ -10,7 +10,7 @@
         cursor: default;
       "
     >
-      <h4 class="q-ma-none">Dashboard</h4>
+      <h5 class="q-ma-none text-italic text-weight-medium">Dashboard</h5>
       <p
         class="q-ma-none text-subtitle1 shadow-4 rounded-borders"
         style="
@@ -52,9 +52,6 @@
           <q-tab-panel name="one">
             <div class="flex flex-wrap justify-evenly">
               <info-data />
-              <info-data />
-              <info-data />
-              <info-data />
             </div>
 
             <q-separator class="q-my-lg" />
@@ -90,38 +87,35 @@
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(user, index) in users" :key="index">
+                <tr v-for="user in users" :key="user.id">
                   <td>{{ user.name }}</td>
                   <td>{{ user.email }}</td>
-                  <td>{{ user.role }}</td>
-                </tr>
-
-                <tr>
                   <td>
-                    <input
-                      type="text"
-                      v-model="newUser.name"
-                      placeholder="Name"
+                    <q-select
+                      v-model="user.role"
+                      :options="['ADMIN', 'MANAGER', 'MEMBER']"
+                      label="Role"
+                      dense
+                      outlined
+                      rounded
+                      color="purple-4"
+                      popup-content-class="selectmenu"
+                      class="mySelect"
                     />
                   </td>
                   <td>
-                    <input
-                      type="text"
-                      v-model="newUser.email"
-                      placeholder="Email"
+                    <q-btn
+                      label="update"
+                      color="purple-3"
+                      rounded=""
+                      @click="updateUserRole(user.id, user.role)"
+                      v-if="user.role !== originalRoles[user.id]"
                     />
                   </td>
-                  <td>
-                    <input
-                      type="text"
-                      v-model="newUser.role"
-                      placeholder="Role"
-                    />
-                  </td>
-                  <td><button @click="addNewUser">Add User</button></td>
                 </tr>
               </tbody>
             </table>
@@ -154,12 +148,12 @@
                     :options="teamStore.teams"
                     option-value="id"
                     option-label="name"
+                    emit-value
+                    map-options
                     label="Select Team"
                     outlined
                     dense
-                    class="q-mb-sm"
                   />
-
                   <q-input
                     v-model="newProject.name"
                     label="Project Name"
@@ -178,10 +172,17 @@
 
                 <q-card-actions align="right">
                   <q-btn flat label="Cancel" color="grey-7" v-close-popup />
-                  <q-btn
+                  <!-- <q-btn
                     flat
                     label="Save"
                     color="purple-8"
+                    @click="saveProject"
+                    :disable="!selectedTeamId"
+                  /> -->
+                  <q-btn
+                    label="save"
+                    color="purple-3"
+                    rounded
                     @click="saveProject"
                     :disable="!selectedTeamId"
                   />
@@ -307,7 +308,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from "vue"; // Import 'computed'
+import { ref, reactive, onMounted, computed } from "vue"; // Import 'computed'
 import { useDateFormat, useNow } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { useProjectStore } from "../store/projectStore";
@@ -353,7 +354,6 @@ const distributions = ref([
 ]);
 
 // Use a computed property to get the users from the store
-const users = computed(() => authStore.getUsers);
 
 const addNewUser = () => {
   // Logic to add a new user to the database goes here.
@@ -367,7 +367,14 @@ const resetNewUserForm = () => {
 };
 
 const saveProject = async () => {
-  if (!newProject.name.trim()) return;
+  if (!newProject.name.trim()) {
+    $q.notify({
+      color: "warning",
+      message: "Project name is required!",
+      position: "top",
+    });
+    return;
+  }
 
   try {
     await projectStore.createProject({
@@ -375,9 +382,13 @@ const saveProject = async () => {
       name: newProject.name,
       description: newProject.description,
     });
+
+    await projectStore.fetchProjects(selectedTeamId.value);
+
     dialogOpen.value = false;
     newProject.name = "";
     newProject.description = "";
+
     $q.notify({
       color: "positive",
       position: "top",
@@ -435,16 +446,40 @@ const logout = () => {
     message: "Logged out successfully!",
   });
 };
+const users = computed(() => authStore.getUsers);
 
+// ... (other functions) ...
+
+const originalRoles = ref({});
+
+const updateUserRole = async (userId, newRole) => {
+  try {
+    await authStore.updateUserRole(userId, newRole);
+    $q.notify({
+      color: "positive",
+      position: "top",
+      message: `User role updated to ${newRole}!`,
+    });
+    // Update the originalRoles map to reflect the new state
+    originalRoles.value[userId] = newRole;
+  } catch (error) {
+    console.error("Failed to update user role:", error);
+    $q.notify({
+      color: "negative",
+      position: "top",
+      message: "Failed to update user role.",
+    });
+  }
+};
 onMounted(async () => {
-  // First, fetch the current authenticated user's details and role.
   await authStore.fetchMe();
 
-  // Now, check if a user is logged in and if they have the ADMIN role.
   if (authStore.isLoggedIn && authStore.user.role === "ADMIN") {
-    // If the user is an admin, safely fetch all users.
     try {
       await authStore.fetchAllUsers();
+      users.value.forEach((user) => {
+        originalRoles.value[user.id] = user.role;
+      });
     } catch (error) {
       console.error("Failed to fetch all users:", error);
       $q.notify({
@@ -453,17 +488,19 @@ onMounted(async () => {
         message: "Failed to fetch user list. Are you an admin?",
       });
     }
-  } else {
-    // Optional: Redirect non-admins or handle the UI differently.
-    console.warn("User is not an admin, skipping user list fetch.");
   }
 
-  // Continue with other fetches
+  // Fetch all teams first
   await teamStore.fetchTeams();
-  await projectStore.fetchProjects();
 
+  // Check if there are teams and set a default selectedTeamId
   if (teamStore.teams.length > 0) {
     selectedTeamId.value = teamStore.teams[0].id;
+  }
+
+  // Only fetch projects if a team has been selected
+  if (selectedTeamId.value) {
+    await projectStore.fetchProjects(selectedTeamId.value);
   }
 });
 </script>
@@ -593,5 +630,12 @@ h6 {
 .create-account:hover {
   color: #0056b3;
   text-decoration: none;
+}
+.selectmenu {
+  border-radius: 12px;
+  background: #ece0f7;
+}
+.mySelect {
+  max-width: 200px;
 }
 </style>
