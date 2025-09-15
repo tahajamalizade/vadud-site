@@ -21,6 +21,10 @@ const routes = [
         component: () => import("pages/projectID.vue"),
         meta: { requiresAuth: true },
       },
+      {
+        path: "/my-tasks",
+        component: () => import("pages/memberPage.vue"),
+      },
     ],
   },
 

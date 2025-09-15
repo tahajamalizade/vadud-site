@@ -6,9 +6,7 @@
           style="cursor: default"
           class="flex flex-center text-purple-2"
         >
-          <router-link to="/dashboard" class="create-account">
-            Vdud
-          </router-link>
+          Vdud
         </q-toolbar-title>
       </q-toolbar>
     </q-header>

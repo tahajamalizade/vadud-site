@@ -48,6 +48,39 @@ export const useTaskStore = defineStore("task", {
       });
     },
 
+    async fetchMyTasks() {
+      this.loading = true;
+      try {
+        const query = gql`
+          query GetMyTasks {
+            myTasks {
+              id
+              title
+              description
+              status
+              assignee {
+                id
+                name
+              }
+              project {
+                id
+                name
+              }
+              createdAt
+            }
+          }
+        `;
+        const res = await this.getClient().request(query);
+        this.tasks = res.myTasks;
+        this.error = null;
+      } catch (err) {
+        this.error = err.message;
+        console.error("Error fetching my tasks:", err);
+      } finally {
+        this.loading = false;
+      }
+    },
+
     /**
      * Fetches all tasks for a specific project without pagination.
      * @param {string} projectId - The ID of the project to fetch tasks for.
