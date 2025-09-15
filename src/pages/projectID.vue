@@ -1,6 +1,5 @@
 <template>
   <q-page class="q-pa-md bg-grey-1">
-    <!-- Header -->
     <div class="text-center q-mb-md">
       <h4 class="q-mt-none q-mb-sm">Project Management</h4>
     </div>
@@ -24,8 +23,6 @@
         />
       </div>
     </q-card>
-
-    <!-- Kanban Board -->
     <div class="row q-col-gutter-md no-wrap scroll" style="overflow-x: auto">
       <div
         v-for="(col, index) in columns"
@@ -83,13 +80,12 @@
             </div>
           </q-form>
 
-          <!-- Tasks -->
           <draggable
             v-model="col.tasks"
             group="kanban"
             item-key="id"
             class="column-tasks q-gutter-sm q-pa-md"
-            @end="persist"
+            @change="onTaskChange"
           >
             <template #item="{ element: task }">
               <q-card
@@ -117,11 +113,12 @@
       </div>
     </div>
   </q-page>
+
   <q-dialog v-model="taskopen">
     <q-card flat bordered style="min-width: 400px" class="rounded-borders">
       <q-card-section class="q-pa-lg">
         <div class="text-h6 text-purple-6 q-pa-md">
-          <p>task:{{ selecttass.title }}</p>
+          <p>Task: {{ selecttass?.title }}</p>
         </div>
 
         <q-input
@@ -142,29 +139,24 @@
           class="q-mb-sm"
         />
 
-        <div class="row q-col-gutter-md q-mb-sm">
-          <q-select
-            dense
-            outlined
-            v-model="selecttass.status"
-            :options="['TODO', 'IN_PROGRESS', 'DONE']"
-            label="Status"
-            class="col-6"
-          />
-          <q-select
-            dense
-            outlined
-            v-model="selecttass.priority"
-            :options="['Low', 'Medium', 'High']"
-            label="Priority"
-            class="col-6"
-          />
-        </div>
-
-        <q-input
+        <q-select
           dense
           outlined
-          v-model="selecttass.assignee"
+          v-model="selecttass.status"
+          :options="['TODO', 'IN_PROGRESS', 'DONE']"
+          label="Status"
+          class="col-6"
+        />
+
+        <q-select
+          dense
+          outlined
+          v-model="selecttass.assigneeId"
+          :options="allUsers"
+          option-value="id"
+          option-label="name"
+          emit-value
+          map-options
           label="Assignee"
           class="q-mb-sm"
         />
@@ -191,7 +183,7 @@
           </template>
         </q-input>
 
-        <q-input
+        <!-- <q-input
           dense
           outlined
           v-model="selecttass.comments"
@@ -199,7 +191,7 @@
           autogrow
           type="textarea"
           class="q-mb-sm"
-        />
+        /> -->
       </q-card-section>
 
       <q-card-actions align="right">
@@ -211,11 +203,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from "vue";
-import { uid, useQuasar } from "quasar";
+import { ref, reactive, watch, onMounted, computed } from "vue";
+import { useQuasar } from "quasar";
 import draggable from "vuedraggable";
 import { useRoute } from "vue-router";
 import { useTaskStore } from "../store/tasksStore";
+import { useAuthStore } from "../store/authStore";
 
 const $q = useQuasar();
 const route = useRoute();
@@ -225,6 +218,9 @@ const taskopen = ref(false);
 const selecttass = ref(null);
 
 const taskStore = useTaskStore();
+const authStore = useAuthStore();
+
+const allUsers = computed(() => authStore.getUsers);
 
 const columns = ref([
   { id: "TODO", title: "TODO", tasks: [] },
@@ -239,11 +235,12 @@ onMounted(async () => {
   if (projectId) {
     try {
       await taskStore.fetchTasks(projectId);
+      await authStore.fetchAllUsers();
       groupTasksByStatus();
     } catch (error) {
       $q.notify({
         type: "negative",
-        message: "Failed to load tasks.",
+        message: "Failed to load tasks or users.",
       });
     }
   }
@@ -261,41 +258,14 @@ function groupTasksByStatus() {
   columns.value.forEach((col) => (col.tasks = []));
 
   taskStore.tasks.forEach((task) => {
-    const col = columns.value.find(
-      (c) =>
-        c.title.toLowerCase().replace(" ", "-") ===
-        task.status.toLowerCase().replace(" ", "-")
-    );
+    const col = columns.value.find((c) => c.id === task.status);
     if (col) {
       col.tasks.push(task);
     }
   });
 }
 
-function persist() {
-  $q.notify({ message: "Saved", color: "positive", icon: "check_circle" });
-}
-
-async function addColumn() {
-  const title = newColumnTitle.value.trim();
-  if (!title)
-    return $q.notify({ type: "warning", message: "Column title is required" });
-
-  columns.value.push({ id: uid(), title, tasks: [] });
-  newColumnTitle.value = "";
-}
-
-function removeColumn(id) {
-  columns.value = columns.value.filter((c) => c.id !== id);
-}
-
-function renameColumn(col) {
-  $q.dialog({
-    title: "Rename column",
-    prompt: { model: col.title, type: "text" },
-    cancel: true,
-  }).onOk((val) => (col.title = val));
-}
+function persist() {}
 
 async function addTask(columnId) {
   const title = newTaskTitle[columnId]?.trim();
@@ -308,7 +278,7 @@ async function addTask(columnId) {
       projectId,
       input: {
         title,
-        status: col.title,
+        status: col.id,
       },
     });
     newTaskTitle[columnId] = "";
@@ -327,13 +297,25 @@ async function removeTask(columnId, taskId) {
   }
 }
 
-function openTask(task) {
-  selecttass.value = { ...task };
-  taskopen.value = true;
+async function openTask(task) {
+  try {
+    const fullTask = await taskStore.fetchTask(task.id);
+    selecttass.value = {
+      ...fullTask,
+      assigneeId: fullTask.assignee ? fullTask.assignee.id : null,
+    };
+    taskopen.value = true;
+  } catch (error) {
+    $q.notify({
+      type: "negative",
+      message: "Failed to load full task details.",
+    });
+  }
 }
 
 async function saveTask() {
   if (!selecttass.value || !selecttass.value.id) return;
+
   try {
     await taskStore.updateTask({
       taskId: selecttass.value.id,
@@ -341,8 +323,10 @@ async function saveTask() {
         title: selecttass.value.title,
         description: selecttass.value.description,
         status: selecttass.value.status,
+        assigneeId: selecttass.value.assigneeId,
       },
     });
+
     taskopen.value = false;
     $q.notify({ type: "positive", message: "Task updated successfully." });
   } catch (error) {
@@ -350,24 +334,30 @@ async function saveTask() {
   }
 }
 
-async function onDragEnd(event) {
-  const updatedColumns = columns.value;
-  const movedTask = updatedColumns
-    .map((col) => col.tasks)
-    .flat()
-    .find((task) => task.id === event.item.dataset.taskId);
-  const newColumn = updatedColumns.find((col) => col.tasks.includes(movedTask));
+function onTaskChange(event) {
+  if (event.added || event.moved) {
+    const movedTask = event.added?.element || event.moved?.element;
+    if (movedTask) {
+      const newColumn = columns.value.find((col) =>
+        col.tasks.some((task) => task.id === movedTask.id)
+      );
 
-  if (movedTask && newColumn) {
-    try {
-      await taskStore.updateTask({
-        taskId: movedTask.id,
-        input: { status: newColumn.title },
-      });
-      $q.notify({ type: "positive", message: "Task status updated." });
-    } catch (error) {
-      $q.notify({ type: "negative", message: "Failed to update task status." });
+      if (newColumn && newColumn.id !== movedTask.status) {
+        updateTaskStatus(movedTask.id, newColumn.id);
+      }
     }
+  }
+}
+
+async function updateTaskStatus(taskId, newStatus) {
+  try {
+    await taskStore.updateTask({
+      taskId,
+      input: { status: newStatus },
+    });
+    $q.notify({ type: "positive", message: "Task status updated." });
+  } catch (error) {
+    $q.notify({ type: "negative", message: "Failed to update task status." });
   }
 }
 

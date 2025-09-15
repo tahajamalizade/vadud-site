@@ -6,7 +6,9 @@
           style="cursor: default"
           class="flex flex-center text-purple-2"
         >
-          Vdud
+          <router-link to="/dashboard" class="create-account">
+            Vdud
+          </router-link>
         </q-toolbar-title>
       </q-toolbar>
     </q-header>
@@ -23,4 +25,18 @@ defineOptions({
 });
 </script>
 
-<style></style>
+<style>
+.create-account {
+  display: inline-block;
+  color: hwb(270 95% 0%);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.create-account:hover {
+  color: #a7c6e7;
+  text-decoration: none;
+}
+</style>

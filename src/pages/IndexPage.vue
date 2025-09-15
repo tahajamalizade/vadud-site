@@ -31,9 +31,8 @@
             placeholder="Password"
             required
           />
-          <button class="submit-button" type="submit" :disabled="isLoading">
-            <span v-if="isLoading">Loading...</span>
-            <span v-else>LOGIN</span>
+          <button class="submit-button" type="submit">
+            <span>LOGIN</span>
           </button>
         </form>
       </div>

@@ -1,19 +1,35 @@
 <template>
   <q-card
-    class="my-card text-black shadow-8 rounded-borders"
+    class="my-card text-black shadow-20 rounded-borders"
     style="background-color: azure; width: 14vw; border-radius: 30px"
   >
-    <q-card-section>
-      <div class="text">
+    <q-card-section class="card">
+      <div class="flex flex-center">
         <q-icon color="blue-5" name="circle" />
-        tasks complete
+        All Tasks:
       </div>
-      <div class="text-h6">123 Tasks</div>
-      <div class="text-subtitle2">by taha jamalizade</div>
+      <div class="text-h6 flex flex-center">
+        {{ completedTasksCount }} Tasks
+      </div>
     </q-card-section>
-
-    <q-card-section class="q-pt-none"> </q-card-section>
   </q-card>
 </template>
 
-<script setup></script>
+<script setup>
+import { defineProps } from "vue";
+
+const props = defineProps({
+  completedTasksCount: {
+    type: Number,
+    required: true,
+  },
+});
+</script>
+
+<style>
+.card {
+  justify-content: center;
+  flex-wrap: wrap;
+  align-items: center;
+}
+</style>

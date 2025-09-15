@@ -51,7 +51,7 @@
         <q-tab-panels color="grey-2" v-model="tab" style="border-radius: 30px">
           <q-tab-panel name="one">
             <div class="flex flex-wrap justify-evenly">
-              <info-data />
+              <info-data :completedTasksCount="taskStore.completedTasksCount" />
             </div>
 
             <q-separator class="q-my-lg" />
@@ -70,12 +70,13 @@
                 <p class="text-h6 flex-center">Tasks Distribution</p>
                 <div class="flex row justify-around q-mt-sm">
                   <li
-                    v-for="d in distributions"
+                    v-for="d in taskStore.taskDistribution"
                     :key="d.priority"
-                    class="text-h6 list-none"
+                    class="liTask text-h6 list-none"
                   >
                     <span class="text-grey">{{ d.priority }}</span
-                    >: {{ d.value }}
+                    >:
+                    {{ d.value > 0 ? d.value : `no task in ${d.priority}` }}
                   </li>
                 </div>
               </div>
@@ -91,7 +92,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="user in users" :key="user.id">
+                <tr v-for="user in localUsers" :key="user.id">
                   <td>{{ user.name }}</td>
                   <td>{{ user.email }}</td>
                   <td>
@@ -111,7 +112,7 @@
                     <q-btn
                       label="update"
                       color="purple-3"
-                      rounded=""
+                      rounded
                       @click="updateUserRole(user.id, user.role)"
                       v-if="user.role !== originalRoles[user.id]"
                     />
@@ -172,13 +173,6 @@
 
                 <q-card-actions align="right">
                   <q-btn flat label="Cancel" color="grey-7" v-close-popup />
-                  <!-- <q-btn
-                    flat
-                    label="Save"
-                    color="purple-8"
-                    @click="saveProject"
-                    :disable="!selectedTeamId"
-                  /> -->
                   <q-btn
                     label="save"
                     color="purple-3"
@@ -308,12 +302,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from "vue"; // Import 'computed'
+import { ref, reactive, onMounted, watch, computed } from "vue";
 import { useDateFormat, useNow } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import { useProjectStore } from "../store/projectStore";
 import { useTeamStore } from "../store/teamStore";
 import { useAuthStore } from "../store/authStore";
+import { useTaskStore } from "../store/tasksStore";
 import { useQuasar } from "quasar";
 
 import InfoData from "src/components/InfoData.vue";
@@ -323,6 +318,7 @@ import CardProject from "src/components/CardProject.vue";
 const authStore = useAuthStore();
 const projectStore = useProjectStore();
 const teamStore = useTeamStore();
+const taskStore = useTaskStore(); // Initialize the task store
 const router = useRouter();
 const $q = useQuasar();
 
@@ -331,12 +327,6 @@ const dialogOpen = ref(false);
 const profileDialog = ref(false);
 const teamDialogOpen = ref(false);
 const selectedTeamId = ref(null);
-
-const newUser = reactive({
-  name: "",
-  email: "",
-  role: "",
-});
 
 const newProject = reactive({
   name: "",
@@ -347,24 +337,48 @@ const newTeamName = ref("");
 const currentUserEditable = ref({ name: "", email: "", password: "" });
 
 const formatDate = useDateFormat(useNow(), "dddd MMMM D YYYY");
-const distributions = ref([
-  { priority: "high", value: 22 },
-  { priority: "medium", value: 232 },
-  { priority: "low", value: 212 },
-]);
 
-// Use a computed property to get the users from the store
+// Getters from the store
+const users = computed(() => authStore.getUsers);
 
-const addNewUser = () => {
-  // Logic to add a new user to the database goes here.
-  // This would be a mutation to your GraphQL API.
-};
+// Local reactive state for user roles
+const localUsers = ref([]);
+const originalRoles = ref({});
 
-const resetNewUserForm = () => {
-  newUser.name = "";
-  newUser.email = "";
-  newUser.role = "";
-};
+// Watcher to synchronize local state with the store's users
+watch(
+  users,
+  (newUsers) => {
+    if (newUsers && newUsers.length) {
+      localUsers.value = JSON.parse(JSON.stringify(newUsers));
+      localUsers.value.forEach((user) => {
+        originalRoles.value[user.id] = user.role;
+      });
+    }
+  },
+  { immediate: true }
+);
+
+// --- The New Watcher ---
+watch(selectedTeamId, async (newTeamId) => {
+  if (newTeamId) {
+    // 1. Fetch projects for the new team
+    await projectStore.fetchProjects(newTeamId);
+
+    // 2. Once projects are loaded, fetch tasks for the first project
+    if (projectStore.projects.length > 0) {
+      await taskStore.fetchTasks(projectStore.projects[0].id);
+    } else {
+      // Clear tasks if the selected team has no projects
+      taskStore.tasks = [];
+    }
+  } else {
+    // Clear projects and tasks if no team is selected
+    projectStore.projects = [];
+    taskStore.tasks = [];
+  }
+});
+// --- End of New Watcher ---
 
 const saveProject = async () => {
   if (!newProject.name.trim()) {
@@ -382,7 +396,7 @@ const saveProject = async () => {
       name: newProject.name,
       description: newProject.description,
     });
-
+    // Re-fetch projects for the updated team
     await projectStore.fetchProjects(selectedTeamId.value);
 
     dialogOpen.value = false;
@@ -446,11 +460,6 @@ const logout = () => {
     message: "Logged out successfully!",
   });
 };
-const users = computed(() => authStore.getUsers);
-
-// ... (other functions) ...
-
-const originalRoles = ref({});
 
 const updateUserRole = async (userId, newRole) => {
   try {
@@ -460,8 +469,11 @@ const updateUserRole = async (userId, newRole) => {
       position: "top",
       message: `User role updated to ${newRole}!`,
     });
-    // Update the originalRoles map to reflect the new state
-    originalRoles.value[userId] = newRole;
+    // Re-synchronize the original roles after a successful update
+    const updatedUser = localUsers.value.find((u) => u.id === userId);
+    if (updatedUser) {
+      originalRoles.value[userId] = updatedUser.role;
+    }
   } catch (error) {
     console.error("Failed to update user role:", error);
     $q.notify({
@@ -471,15 +483,13 @@ const updateUserRole = async (userId, newRole) => {
     });
   }
 };
+
 onMounted(async () => {
   await authStore.fetchMe();
 
-  if (authStore.isLoggedIn && authStore.user.role === "ADMIN") {
+  if (authStore.isLoggedIn && authStore.user?.role === "ADMIN") {
     try {
       await authStore.fetchAllUsers();
-      users.value.forEach((user) => {
-        originalRoles.value[user.id] = user.role;
-      });
     } catch (error) {
       console.error("Failed to fetch all users:", error);
       $q.notify({
@@ -490,17 +500,12 @@ onMounted(async () => {
     }
   }
 
-  // Fetch all teams first
+  // Fetch all teams on initial load.
   await teamStore.fetchTeams();
 
-  // Check if there are teams and set a default selectedTeamId
+  // Set the selected team to the first one available
   if (teamStore.teams.length > 0) {
     selectedTeamId.value = teamStore.teams[0].id;
-  }
-
-  // Only fetch projects if a team has been selected
-  if (selectedTeamId.value) {
-    await projectStore.fetchProjects(selectedTeamId.value);
   }
 });
 </script>
@@ -637,5 +642,11 @@ h6 {
 }
 .mySelect {
   max-width: 200px;
+}
+.liTask {
+  border: #e475f3 solid 2px;
+  padding: 6px;
+  border-radius: 15px;
+  width: fit-content;
 }
 </style>

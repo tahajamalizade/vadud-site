@@ -4,14 +4,41 @@ import { useAuthStore } from "./authStore";
 
 export const useTaskStore = defineStore("task", {
   state: () => ({
-    // The state is now a simple array to hold all tasks
     tasks: [],
     loading: false,
     error: null,
   }),
+  getters: {
+    completedTasksCount(state) {
+      // This is a simple getter for the total count, which you are already using.
+      return state.tasks.length;
+    },
+
+    // New getter to count tasks by status
+    taskDistribution(state) {
+      const counts = {
+        TODO: 0,
+        "IN PROGRESS": 0,
+        DONE: 0,
+      };
+
+      state.tasks.forEach((task) => {
+        const status = task.status.toUpperCase(); // Ensure the status is in uppercase
+        if (counts.hasOwnProperty(status)) {
+          counts[status]++;
+        }
+      });
+
+      // Convert the object to the array format your component expects
+      return [
+        { priority: "TODO", value: counts["TODO"] },
+        { priority: "IN PROGRESS", value: counts["IN_PROGRESS"] },
+        { priority: "DONE", value: counts["DONE"] },
+      ];
+    },
+  },
 
   actions: {
-    // Helper function to get an authenticated GraphQL client
     getClient() {
       const authStore = useAuthStore();
       return new GraphQLClient("http://localhost:5000/graphql", {
