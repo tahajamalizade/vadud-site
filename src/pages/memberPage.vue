@@ -150,27 +150,10 @@
       </q-card-section>
 
       <q-card-section>
-        <q-input
-          v-model="currentUserEditable.name"
-          label="User Name"
-          outlined
-          dense
-          class="q-mb-sm"
-        />
-        <q-input
-          v-model="currentUserEditable.email"
-          label="Email"
-          outlined
-          dense
-          class="q-mb-sm"
-        />
-        <q-input
-          v-model="currentUserEditable.password"
-          label="Password"
-          type="password"
-          outlined
-          dense
-        />
+        <h6 v-if="authStore.user">
+          name : {{ authStore.user.name }} <br />
+          email : {{ authStore.user.email }}
+        </h6>
       </q-card-section>
 
       <q-card-section style="padding-left: 20px">
@@ -179,7 +162,6 @@
 
       <q-card-actions align="right">
         <q-btn flat label="Close" color="grey" v-close-popup />
-        <q-btn flat label="Save" color="purple-8" @click="saveProfile" />
       </q-card-actions>
     </q-card>
   </q-dialog>
@@ -242,14 +224,6 @@ watch(
   },
   { deep: true }
 );
-const saveProfile = async () => {
-  profileDialog.value = false;
-  $q.notify({
-    color: "info",
-    position: "top",
-    message: "Profile update not yet implemented.",
-  });
-};
 
 function onTaskChange(event) {
   if (event.added || event.moved) {

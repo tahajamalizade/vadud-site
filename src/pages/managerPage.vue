@@ -42,116 +42,20 @@
           align="justify"
           style="border-radius: 30px"
         >
-          <q-tab name="one" label="Dashboard" />
           <q-tab name="two" label="Projects" />
         </q-tabs>
 
         <q-separator />
 
         <q-tab-panels color="grey-2" v-model="tab" style="border-radius: 30px">
-          <q-tab-panel name="one">
-            <div class="flex flex-wrap justify-evenly">
-              <info-data :completedTasksCount="taskStore.completedTasksCount" />
-            </div>
-
-            <q-separator class="q-my-lg" />
-
-            <div
-              class="flex flex-center shadow-8 rounded-borders q-pa-md bg-white"
-            >
-              <div class="column q-mr-xl">
-                <p class="text-subtitle1 text-weight-medium">
-                  🗠 Monthly productivity activity
-                </p>
-                <line-chart />
-              </div>
-
-              <div class="flex column q-pa-sm" style="width: 50%">
-                <p class="text-h6 flex-center">Tasks Distribution</p>
-                <div class="flex row justify-around q-mt-sm">
-                  <li
-                    v-for="d in taskStore.taskDistribution"
-                    :key="d.priority"
-                    class="liTask text-h6 list-none"
-                  >
-                    <span class="text-grey">{{ d.priority }}</span
-                    >:
-                    {{ d.value > 0 ? d.value : `no task in ${d.priority}` }}
-                  </li>
-                </div>
-              </div>
-            </div>
-
-            <table class="people-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="user in localUsers" :key="user.id">
-                  <td>{{ user.name }}</td>
-                  <td>{{ user.email }}</td>
-                  <td>
-                    <q-select
-                      v-model="user.role"
-                      :options="['ADMIN', 'MANAGER', 'MEMBER']"
-                      label="Role"
-                      dense
-                      outlined
-                      rounded
-                      color="purple-4"
-                      popup-content-class="selectmenu"
-                      class="mySelect"
-                    />
-                  </td>
-                  <td>
-                    <q-btn
-                      label="update"
-                      color="purple-3"
-                      rounded
-                      @click="updateUserRole(user.id, user.role)"
-                      v-if="user.role !== originalRoles[user.id]"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </q-tab-panel>
-
           <q-tab-panel name="two" class="q-pa-lg">
             <div class="row items-center justify-between q-mb-md">
               <q-icon name="person" size="sm" class="q-mr-sm text-purple-8" />
               <div class="text-subtitle1">
-                <span v-if="currentView === 'teams'">Your Boards</span>
-                <span v-else>All Projects</span>
+                <span>Your Boards</span>
               </div>
               <div>
-                <q-btn
-                  v-if="currentView === 'teams'"
-                  label="All Projects"
-                  color="purple-8"
-                  rounded
-                  unelevated
-                  size="md"
-                  icon="view_list"
-                  @click="showAllProjects"
-                  class="q-mr-sm"
-                />
-                <q-btn
-                  v-else
-                  label="Your Boards"
-                  color="purple-8"
-                  rounded
-                  unelevated
-                  size="md"
-                  icon="people"
-                  @click="showTeamBoards"
-                  class="q-mr-sm"
-                />
+
                 <q-btn
                   label="New Project"
                   color="purple-8"
@@ -320,6 +224,7 @@
         <q-card-section>
           <div class="text-h6">Profile Info</div>
         </q-card-section>
+
         <q-card-section>
           <h6 v-if="authStore.user">
             name : {{ authStore.user.name }} <br />
@@ -442,8 +347,6 @@ import { useAuthStore } from "../store/authStore";
 import { useTaskStore } from "../store/tasksStore";
 import { useQuasar } from "quasar";
 
-import InfoData from "src/components/InfoData.vue";
-import LineChart from "src/components/LineChart.vue";
 import CardProject from "src/components/CardProject.vue";
 
 const authStore = useAuthStore();
@@ -577,8 +480,6 @@ const saveTeam = async () => {
     });
   }
 };
-
-
 
 const logout = () => {
   authStore.token = null;

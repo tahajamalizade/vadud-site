@@ -119,10 +119,12 @@ export const useAuthStore = defineStore("auth", {
       }
     },
 
+    // In authStore.js
+
     async updateUserRole(userId, newRole) {
       const mutation = gql`
-        mutation UpdateUserRole($userId: ID!, $newRole: Role!) {
-          updateUserRole(userId: $userId, newRole: $newRole) {
+        mutation UpdateUser($userId: ID!, $role: Role!) {
+          updateUser(userId: $userId, role: $role) {
             id
             role
           }
@@ -130,14 +132,19 @@ export const useAuthStore = defineStore("auth", {
       `;
       const variables = {
         userId,
-        newRole,
+        role: newRole, // The backend mutation expects a variable named 'role'
       };
 
-      await this.getClient().request(mutation, variables);
-      // You can also update the local store state here if needed
-      const userToUpdate = this.users.find((user) => user.id === userId);
-      if (userToUpdate) {
-        userToUpdate.role = newRole;
+      try {
+        const response = await this.getClient().request(mutation, variables);
+        // You can also update the local store state here if needed
+        const userToUpdate = this.users.find((user) => user.id === userId);
+        if (userToUpdate) {
+          userToUpdate.role = response.updateUser.role;
+        }
+      } catch (error) {
+        console.error("Error updating user role:", error);
+        throw error; // Re-throw the error so the component can handle it
       }
     },
 

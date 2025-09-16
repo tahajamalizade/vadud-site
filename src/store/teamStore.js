@@ -8,8 +8,6 @@ export const useTeamStore = defineStore("team", {
   }),
 
   actions: {
-    // This action retrieves the auth token from the auth store and
-    // creates an authenticated GraphQL client for this store's requests.
     getClient() {
       const authStore = useAuthStore();
       return new GraphQLClient("http://localhost:5000/graphql", {
@@ -18,11 +16,6 @@ export const useTeamStore = defineStore("team", {
         },
       });
     },
-
-    /**
-     * Fetches all teams from the backend.
-     * It includes nested fields for members, projects, and the creator.
-     */
     async fetchTeams() {
       try {
         const query = gql`
@@ -57,22 +50,63 @@ export const useTeamStore = defineStore("team", {
       }
     },
 
-    /**
-     * Creates a new team on the backend and adds it to the store.
-     */
-    async createTeam(name) {
+    async addMemberToTeam(teamId, userId) {
+      const mutation = gql`
+        mutation AddUserToTeam($teamId: ID!, $userId: ID!) {
+          addUserToTeam(teamId: $teamId, userId: $userId) {
+            id
+            name
+            members {
+              id
+              name
+              email
+              role
+            }
+          }
+        }
+      `;
+      return this.getClient().request(mutation, { teamId, userId });
+    },
+
+    async removeMemberFromTeam(teamId, userId) {
+      const mutation = gql`
+        mutation RemoveUserFromTeam($teamId: ID!, $userId: ID!) {
+          removeUserFromTeam(teamId: $teamId, userId: $userId) {
+            id
+            name
+            members {
+              id
+              name
+              email
+              role
+            }
+          }
+        }
+      `;
+      return this.getClient().request(mutation, { teamId, userId });
+    },
+
+    async createTeam(name, members) {
       try {
         const mutation = gql`
-          mutation NewTeam($name: String!) {
-            createTeam(name: $name) {
+          mutation NewTeam($name: String!, $members: [ID!]) {
+            createTeam(name: $name, members: $members) {
               id
               name
               createdAt
               updatedAt
+              projects {  // Add this field to the mutation
+                id
+                name
+                createdAt
+              }
             }
           }
         `;
-        const data = await this.getClient().request(mutation, { name });
+        const data = await this.getClient().request(mutation, {
+          name,
+          members,
+        });
         this.teams.push(data.createTeam);
         return data.createTeam;
       } catch (err) {
