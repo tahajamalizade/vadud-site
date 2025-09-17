@@ -194,13 +194,10 @@ const columns = ref([
   { id: "DONE", title: "DONE", tasks: [] },
 ]);
 
-// Note: Removed `newColumnTitle` and `newTaskTitle` as members can't create columns/tasks
-
 onMounted(async () => {
   try {
     await taskStore.fetchMyTasks();
 
-    // Check if the user is an admin or manager before fetching all users
     if (
       authStore.user?.role === "ADMIN" ||
       authStore.user?.role === "MANAGER"
@@ -229,24 +226,28 @@ function onTaskChange(event) {
   if (event.added || event.moved) {
     const movedTask = event.added?.element || event.moved?.element;
     if (movedTask) {
-      // Find the column the task was dropped into
       const newColumn = columns.value.find((col) =>
         col.tasks.some((task) => task.id === movedTask.id)
       );
 
-      // Check if the task's status has actually changed
       if (newColumn && newColumn.id !== movedTask.status) {
-        updateTaskStatus(movedTask.id, newColumn.id);
+        // Find the full task object from the store's state
+        const taskInStore = taskStore.tasks.find((t) => t.id === movedTask.id);
+
+        // Call the update function with the taskId, new status, and assigneeId
+        if (taskInStore) {
+          updateTaskStatus(movedTask.id, newColumn.id, taskInStore.assignee.id);
+        }
       }
     }
   }
 }
 
-async function updateTaskStatus(taskId, newStatus) {
+async function updateTaskStatus(taskId, newStatus, assigneeId) {
   try {
     await taskStore.updateTask({
       taskId,
-      input: { status: newStatus },
+      input: { status: newStatus, assigneeId },
     });
     $q.notify({ type: "positive", message: "Task status updated." });
   } catch (error) {

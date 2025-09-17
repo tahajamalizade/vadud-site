@@ -328,6 +328,9 @@ export const useTaskStore = defineStore("task", {
               id
               name
               createdAt
+              team {
+                id
+              }
             }
           }
         `;
@@ -339,6 +342,51 @@ export const useTaskStore = defineStore("task", {
         throw err;
       } finally {
         this.loading = false;
+      }
+    },
+    async fetchTeamMembers(teamId) {
+      this.loading = true;
+      try {
+        const query = gql`
+          query GetTeam($teamId: ID!) {
+            team(id: $teamId) {
+              id
+              name
+              members {
+                id
+                name
+              }
+            }
+          }
+        `;
+        const res = await this.getClient().request(query, { teamId });
+        return res.team.members;
+      } catch (err) {
+        this.error = err.message;
+        console.error("Error fetching team members:", err);
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async fetchProjectById(projectId) {
+      try {
+        const query = gql`
+          query GetProjectById($projectId: ID!) {
+            project(id: $projectId) {
+              id
+              name
+              team {
+                id
+              }
+            }
+          }
+        `;
+        const res = await this.getClient().request(query, { projectId });
+        return res.project;
+      } catch (err) {
+        console.error("Error fetching project by ID:", err);
+        throw err;
       }
     },
   },

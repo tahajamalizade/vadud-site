@@ -47,10 +47,17 @@ export default route(function ({ store }) {
     if (isLoggedIn) {
       if (userRole === "MEMBER" && to.path !== "/my-tasks") {
         return next("/my-tasks");
-      } else if (userRole === "ADMIN" && to.path !== "/dashboard") {
-        return next("/dashboard");
-      } else if (userRole === "MANAGER" && to.path !== "/manager") {
-        return next("/manager");
+      } else if (userRole === "ADMIN") {
+        // Allow ADMIN to go to /dashboard, /project, or other pages
+        // but redirect them from member/manager pages.
+        if (to.path === "/my-tasks" || to.path === "/manager") {
+          return next("/dashboard");
+        }
+      } else if (userRole === "MANAGER") {
+        // Allow MANAGER to go to /manager and project pages.
+        if (to.path === "/my-tasks" || to.path === "/dashboard") {
+          return next("/manager");
+        }
       }
     }
 

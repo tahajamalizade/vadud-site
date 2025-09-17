@@ -95,11 +95,6 @@ export const useTeamStore = defineStore("team", {
               name
               createdAt
               updatedAt
-              projects {  // Add this field to the mutation
-                id
-                name
-                createdAt
-              }
             }
           }
         `;

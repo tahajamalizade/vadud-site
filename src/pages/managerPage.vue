@@ -55,7 +55,6 @@
                 <span>Your Boards</span>
               </div>
               <div>
-
                 <q-btn
                   label="New Project"
                   color="purple-8"
@@ -145,18 +144,9 @@
               />
             </div>
 
-            <div class="row items-center justify-between q-mb-md q-mt-xl">
+            <div class="row flex-center q-mb-md q-mt-xl">
               <q-icon name="people" size="sm" class="q-mr-sm text-purple-8" />
               <div class="text-subtitle1">Team Boards</div>
-              <q-btn
-                label="New Team"
-                color="purple-8"
-                rounded
-                unelevated
-                size="md"
-                icon="add"
-                @click="teamDialogOpen = true"
-              />
             </div>
 
             <div
@@ -356,7 +346,7 @@ const taskStore = useTaskStore();
 const router = useRouter();
 const $q = useQuasar();
 
-const tab = ref("one");
+const tab = ref("two");
 const dialogOpen = ref(false);
 const profileDialog = ref(false);
 const teamDialogOpen = ref(false);
@@ -548,6 +538,8 @@ const availableUsers = computed(() => {
 
 const openManageDialog = (team) => {
   selectedTeam.value = team;
+  selectedTeamProjects.value = team.projects || [];
+
   manageMembersDialog.value = true;
 };
 

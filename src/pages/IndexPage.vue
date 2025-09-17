@@ -65,6 +65,7 @@ const loginData = reactive({
   email: "",
   password: "",
 });
+
 async function doLogin() {
   if (!loginData.email || !loginData.password) return;
 
@@ -77,7 +78,19 @@ async function doLogin() {
       textColor: "white",
     });
 
-    router.push("/dashboard");
+    await authStore.fetchMe();
+
+    const userRole = authStore.user?.role;
+
+    if (userRole === "MEMBER") {
+      router.push("/my-tasks");
+    } else if (userRole === "MANAGER") {
+      router.push("/manager");
+    } else if (userRole === "ADMIN") {
+      router.push("/dashboard");
+    } else {
+      router.push("/");
+    }
   } catch (err) {
     $q.notify({
       message: err.message || "Email or password is wrong",

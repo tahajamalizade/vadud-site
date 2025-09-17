@@ -6,7 +6,7 @@
 
     <q-card flat bordered class="q-pa-md q-mb-md rounded-borders shadow-20">
       <div class="flex flex-center row items-center q-gutter-sm q-ma-md">
-        <q-input
+        <!-- <q-input
           v-model="newColumnTitle"
           label="New column"
           dense
@@ -20,7 +20,7 @@
           icon="add"
           label="Add"
           @click="addColumn"
-        />
+        /> -->
       </div>
     </q-card>
     <div class="row q-col-gutter-md no-wrap scroll" style="overflow-x: auto">
@@ -152,7 +152,7 @@
           dense
           outlined
           v-model="selecttass.assigneeId"
-          :options="allUsers"
+          :options="teamMembers"
           option-value="id"
           option-label="name"
           emit-value
@@ -209,6 +209,7 @@ import draggable from "vuedraggable";
 import { useRoute } from "vue-router";
 import { useTaskStore } from "../store/tasksStore";
 import { useAuthStore } from "../store/authStore";
+import { useTeamStore } from "../store/teamStore";
 
 const $q = useQuasar();
 const route = useRoute();
@@ -219,8 +220,7 @@ const selecttass = ref(null);
 
 const taskStore = useTaskStore();
 const authStore = useAuthStore();
-
-const allUsers = computed(() => authStore.getUsers);
+const teamStore = useTeamStore();
 
 const columns = ref([
   { id: "TODO", title: "TODO", tasks: [] },
@@ -228,19 +228,54 @@ const columns = ref([
   { id: "DONE", title: "DONE", tasks: [] },
 ]);
 
-const newColumnTitle = ref("");
 const newTaskTitle = reactive({});
+
+const projectTeamId = ref(null);
+const teamMembers = ref([]);
+
+// In projectID.vue
 
 onMounted(async () => {
   if (projectId) {
     try {
-      await taskStore.fetchTasks(projectId);
-      await authStore.fetchAllUsers();
-      groupTasksByStatus();
+      // Step 1: Fetch all teams to get the full list of teams and their projects
+      await teamStore.fetchTeams();
+
+      let projectFound = false;
+      let projectTeamId = null;
+
+      // Step 2: Search for the current project within the fetched teams
+      for (const team of teamStore.teams) {
+        // The `projects` field on `team` is populated by the `Team` resolver
+        // on the backend, so it's safe to check for its existence.
+        if (team.projects) {
+          const project = team.projects.find((p) => p.id === projectId);
+          if (project) {
+            projectTeamId = team.id;
+            projectFound = true;
+            break;
+          }
+        }
+      }
+
+      if (projectFound) {
+        const team = teamStore.teams.find((t) => t.id === projectTeamId);
+        if (team) {
+          teamMembers.value = team.members;
+        }
+
+        await taskStore.fetchTasks(projectId);
+        groupTasksByStatus();
+      } else {
+        $q.notify({
+          type: "negative",
+          message: "Project not found or you don't have access.",
+        });
+      }
     } catch (error) {
       $q.notify({
         type: "negative",
-        message: "Failed to load tasks or users.",
+        message: "Failed to load project data. Please try again.",
       });
     }
   }

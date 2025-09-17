@@ -24,6 +24,7 @@ const routes = [
       {
         path: "/my-tasks",
         component: () => import("pages/memberPage.vue"),
+        meta: { requiresAuth: true },
       },
       {
         path: "/manager",
