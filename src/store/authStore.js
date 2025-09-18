@@ -5,7 +5,7 @@ export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null,
     token: localStorage.getItem("token") || null,
-    users: [], // Add this line to store all users
+    users: [],
   }),
 
   getters: {
@@ -91,14 +91,12 @@ export const useAuthStore = defineStore("auth", {
         this.user = response.me;
       } catch (error) {
         console.error("Error fetching current user:", error);
-        // Handle token expiration or invalid token
         this.token = null;
         this.user = null;
         localStorage.removeItem("token");
       }
     },
 
-    // Add this new action to fetch all users
     async fetchAllUsers() {
       const query = gql`
         query GetAllUsers {
@@ -115,11 +113,9 @@ export const useAuthStore = defineStore("auth", {
         this.users = response.users;
       } catch (error) {
         console.error("Error fetching all users:", error);
-        throw error; // Rethrow the error to be caught by the component
+        throw error;
       }
     },
-
-    // In authStore.js
 
     async updateUserRole(userId, newRole) {
       const mutation = gql`
@@ -132,19 +128,18 @@ export const useAuthStore = defineStore("auth", {
       `;
       const variables = {
         userId,
-        role: newRole, // The backend mutation expects a variable named 'role'
+        role: newRole,
       };
 
       try {
         const response = await this.getClient().request(mutation, variables);
-        // You can also update the local store state here if needed
         const userToUpdate = this.users.find((user) => user.id === userId);
         if (userToUpdate) {
           userToUpdate.role = response.updateUser.role;
         }
       } catch (error) {
         console.error("Error updating user role:", error);
-        throw error; // Re-throw the error so the component can handle it
+        throw error;
       }
     },
 

@@ -184,8 +184,6 @@ const taskStore = useTaskStore();
 const authStore = useAuthStore();
 const router = useRouter();
 
-const currentUserEditable = ref({ name: "", email: "", password: "" });
-
 const allUsers = computed(() => authStore.getUsers);
 
 const columns = ref([
@@ -231,10 +229,8 @@ function onTaskChange(event) {
       );
 
       if (newColumn && newColumn.id !== movedTask.status) {
-        // Find the full task object from the store's state
         const taskInStore = taskStore.tasks.find((t) => t.id === movedTask.id);
 
-        // Call the update function with the taskId, new status, and assigneeId
         if (taskInStore) {
           updateTaskStatus(movedTask.id, newColumn.id, taskInStore.assignee.id);
         }
@@ -267,16 +263,6 @@ function groupTasksByStatus() {
   });
 }
 
-async function openTask(task) {
-  // ... (Your existing openTask logic)
-}
-
-async function saveTask() {
-  // ... (Your existing saveTask logic)
-}
-
-// Remove `addTask`, `removeTask`, `addColumn`, etc. as members should not have these permissions
-
 const columnColors = ["#ffe0b2", "#c8e6c9", "#bbdefb", "#f8bbd0", "#d1c4e9"];
 
 const logout = () => {
@@ -291,7 +277,3 @@ const logout = () => {
   });
 };
 </script>
-
-<style scoped>
-/* Your existing styles */
-</style>

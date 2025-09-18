@@ -2,7 +2,7 @@
   import { GraphQLClient, gql } from "graphql-request";
   import { useAuthStore } from "./authStore";
 
-  const endpoint = "http://localhost:5000/graphql"; // update if needed
+  const endpoint = "http://localhost:5000/graphql"; 
 
   export const useProjectStore = defineStore("project", {
     state: () => ({

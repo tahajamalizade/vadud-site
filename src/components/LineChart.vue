@@ -22,14 +22,12 @@ let chartInstance = null;
 
 const taskStore = useTaskStore();
 
-// Reactive data for the chart
 const monthlyCounts = ref(new Array(12).fill(0));
 const chartLabels = ref([
   "January", "February", "March", "April", "May", "June", "July",
   "August", "September", "October", "November", "December",
 ]);
 
-// Function to process tasks and update the chart data
 const updateChartData = () => {
   const counts = new Array(12).fill(0);
   taskStore.tasks.forEach((task) => {
@@ -45,7 +43,6 @@ const updateChartData = () => {
   });
   monthlyCounts.value = counts;
 
-  // If the chart instance exists, update its data
   if (chartInstance) {
     chartInstance.data.datasets[0].data = monthlyCounts.value;
     chartInstance.update();
@@ -57,11 +54,9 @@ onMounted(async () => {
     await taskStore.fetchTasks(projectId);
     updateChartData();
   } else {
-    // Handle the case where projectId is not available
     console.warn("No projectId found to fetch tasks.");
   }
 
-  // Initialize the chart
   chartInstance = new Chart(chartRef.value, {
     type: "bar",
     data: {
@@ -100,7 +95,6 @@ onMounted(async () => {
   });
 });
 
-// Watch for changes in the tasks array and update the chart
 watch(() => taskStore.tasks, updateChartData, { deep: true });
 </script>
 

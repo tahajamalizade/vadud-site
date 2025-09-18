@@ -385,10 +385,8 @@ watch(
   users,
   (newUsers) => {
     if (newUsers && newUsers.length) {
-      // Create a deep copy to avoid direct mutation of the store state
       localUsers.value = JSON.parse(JSON.stringify(newUsers));
       localUsers.value.forEach((user) => {
-        // Store the original role for each user
         originalRoles.value[user.id] = user.role;
       });
     }

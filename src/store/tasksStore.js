@@ -10,11 +10,9 @@ export const useTaskStore = defineStore("task", {
   }),
   getters: {
     completedTasksCount(state) {
-      // This is a simple getter for the total count, which you are already using.
       return state.tasks.length;
     },
 
-    // New getter to count tasks by status
     taskDistribution(state) {
       const counts = {
         TODO: 0,
@@ -23,13 +21,12 @@ export const useTaskStore = defineStore("task", {
       };
 
       state.tasks.forEach((task) => {
-        const status = task.status.toUpperCase(); // Ensure the status is in uppercase
+        const status = task.status.toUpperCase();
         if (counts.hasOwnProperty(status)) {
           counts[status]++;
         }
       });
 
-      // Convert the object to the array format your component expects
       return [
         { priority: "TODO", value: counts["TODO"] },
         { priority: "IN PROGRESS", value: counts["IN_PROGRESS"] },
@@ -82,8 +79,7 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Fetches all tasks for a specific project without pagination.
-     * @param {string} projectId - The ID of the project to fetch tasks for.
+     * @param {string} projectId
      */
     async fetchTasks(projectId) {
       this.loading = true;
@@ -110,7 +106,6 @@ export const useTaskStore = defineStore("task", {
           }
         `;
         const res = await this.getClient().request(query, { projectId });
-        // The result is now an array of items, not a paginated object
         this.tasks = res.tasks.items;
         this.error = null;
       } catch (err) {
@@ -122,8 +117,7 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Fetches a single task with all details, including comments.
-     * @param {string} taskId - The ID of the task to fetch.
+     * @param {string} taskId -
      */
     async fetchTask(taskId) {
       this.loading = true;
@@ -165,9 +159,8 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Creates a new task.
-     * @param {string} projectId - The project's ID.
-     * @param {object} input - The task data (title, description, assigneeId, etc.).
+     * @param {string} projectId
+     * @param {object} input
      */
     async createTask({ projectId, input }) {
       try {
@@ -189,7 +182,6 @@ export const useTaskStore = defineStore("task", {
           projectId,
           input,
         });
-        // Push the new task to the local state
         this.tasks.push(res.createTask);
         return res.createTask;
       } catch (err) {
@@ -199,9 +191,8 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Updates an existing task.
-     * @param {string} taskId - The task's ID.
-     * @param {object} input - The task data to update.
+     * @param {string} taskId
+     * @param {object} input
      */
     async updateTask({ taskId, input }) {
       const mutation = gql`
@@ -223,7 +214,6 @@ export const useTaskStore = defineStore("task", {
           id: taskId,
           input,
         });
-        // Update the task in the local state for a responsive UI
         const taskIndex = this.tasks.findIndex(
           (t) => t.id === res.updateTask.id
         );
@@ -238,8 +228,7 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Deletes a task.
-     * @param {string} taskId - The ID of the task to delete.
+     * @param {string} taskId
      */
     async deleteTask(taskId) {
       const mutation = gql`
@@ -249,7 +238,6 @@ export const useTaskStore = defineStore("task", {
       `;
       try {
         await this.getClient().request(mutation, { id: taskId });
-        // Remove the task from the local state
         this.tasks = this.tasks.filter((t) => t.id !== taskId);
         return true;
       } catch (err) {
@@ -287,7 +275,6 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Fetches all teams for the current user.
      */
     async fetchTeams() {
       this.loading = true;
@@ -316,7 +303,6 @@ export const useTaskStore = defineStore("task", {
     },
 
     /**
-     * Fetches projects for a specific team.
      * @param {string} teamId - The team's ID.
      */
     async fetchProjects(teamId) {

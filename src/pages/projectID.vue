@@ -233,21 +233,16 @@ const newTaskTitle = reactive({});
 const projectTeamId = ref(null);
 const teamMembers = ref([]);
 
-// In projectID.vue
 
 onMounted(async () => {
   if (projectId) {
     try {
-      // Step 1: Fetch all teams to get the full list of teams and their projects
       await teamStore.fetchTeams();
 
       let projectFound = false;
       let projectTeamId = null;
 
-      // Step 2: Search for the current project within the fetched teams
       for (const team of teamStore.teams) {
-        // The `projects` field on `team` is populated by the `Team` resolver
-        // on the backend, so it's safe to check for its existence.
         if (team.projects) {
           const project = team.projects.find((p) => p.id === projectId);
           if (project) {

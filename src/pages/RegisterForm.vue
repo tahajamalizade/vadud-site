@@ -45,7 +45,6 @@ import { useQuasar } from "quasar";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 
-// for state managment PINIA
 import { useAuthStore } from "src/store/authStore";
 const auth = useAuthStore();
 
