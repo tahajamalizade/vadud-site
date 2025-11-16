@@ -9,12 +9,8 @@ export const useAuthStore = defineStore("auth", {
   }),
 
   getters: {
-    isLoggedIn(state) {
-      return !!state.token;
-    },
-    getUsers(state) {
-      return state.users;
-    },
+    isLoggedIn: (state) => !!state.token,
+    getUsers: (state) => state.users,
   },
 
   actions: {
@@ -59,14 +55,7 @@ export const useAuthStore = defineStore("auth", {
           }
         }
       `;
-
-      const variables = {
-        input: {
-          name,
-          email,
-          password,
-        },
-      };
+      const variables = { input: { name, email, password } };
 
       const res = await this.getClient().request(mutation, variables);
 
@@ -91,9 +80,7 @@ export const useAuthStore = defineStore("auth", {
         this.user = response.me;
       } catch (error) {
         console.error("Error fetching current user:", error);
-        this.token = null;
-        this.user = null;
-        localStorage.removeItem("token");
+        this.logout();
       }
     },
 
@@ -108,13 +95,8 @@ export const useAuthStore = defineStore("auth", {
           }
         }
       `;
-      try {
-        const response = await this.getClient().request(query);
-        this.users = response.users;
-      } catch (error) {
-        console.error("Error fetching all users:", error);
-        throw error;
-      }
+      const response = await this.getClient().request(query);
+      this.users = response.users;
     },
 
     async updateUserRole(userId, newRole) {
@@ -126,27 +108,23 @@ export const useAuthStore = defineStore("auth", {
           }
         }
       `;
-      const variables = {
-        userId,
-        role: newRole,
-      };
-
-      try {
-        const response = await this.getClient().request(mutation, variables);
-        const userToUpdate = this.users.find((user) => user.id === userId);
-        if (userToUpdate) {
-          userToUpdate.role = response.updateUser.role;
-        }
-      } catch (error) {
-        console.error("Error updating user role:", error);
-        throw error;
-      }
+      const variables = { userId, role: newRole };
+      const response = await this.getClient().request(mutation, variables);
+      const userToUpdate = this.users.find((u) => u.id === userId);
+      if (userToUpdate) userToUpdate.role = response.updateUser.role;
     },
 
-    checkAuth() {
+    logout() {
+      this.token = null;
+      this.user = null;
+      localStorage.removeItem("token");
+    },
+
+    async initAuth() {
       const token = localStorage.getItem("token");
       if (token) {
         this.token = token;
+        await this.fetchMe();
       }
     },
   },

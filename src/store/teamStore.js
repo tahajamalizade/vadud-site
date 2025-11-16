@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { GraphQLClient, gql } from "graphql-request";
-import { useAuthStore } from "./authStore"; // Import the auth store
+import { useAuthStore } from "./authStore";
 
 export const useTeamStore = defineStore("team", {
   state: () => ({

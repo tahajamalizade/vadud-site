@@ -2,7 +2,6 @@
   <q-page class="flex" style="height: 100vh; width: 100vw">
     <div class="background">
       <div class="icon">
-        <!-- Your SVG icon -->
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="60"
@@ -83,7 +82,7 @@ async function doLogin() {
     const userRole = authStore.user?.role;
 
     if (userRole === "MEMBER") {
-      router.push("/my-tasks");
+      router.push("/member");
     } else if (userRole === "MANAGER") {
       router.push("/manager");
     } else if (userRole === "ADMIN") {
@@ -93,7 +92,7 @@ async function doLogin() {
     }
   } catch (err) {
     $q.notify({
-      message: err.message || "Email or password is wrong",
+      message: "Email or password is wrong",
       color: "red",
       textColor: "white",
     });
@@ -194,7 +193,6 @@ html,
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 .background {

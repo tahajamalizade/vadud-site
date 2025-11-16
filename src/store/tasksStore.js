@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { GraphQLClient, gql } from "graphql-request";
-import { useAuthStore } from "./authStore";
+import { useAuthStore } from "./authStore"; // ← اضافه شد
 
 export const useTaskStore = defineStore("task", {
   state: () => ({
@@ -29,7 +29,7 @@ export const useTaskStore = defineStore("task", {
 
       return [
         { priority: "TODO", value: counts["TODO"] },
-        { priority: "IN PROGRESS", value: counts["IN_PROGRESS"] },
+        { priority: "IN PROGRESS", value: counts["IN PROGRESS"] },
         { priority: "DONE", value: counts["DONE"] },
       ];
     },
@@ -55,6 +55,7 @@ export const useTaskStore = defineStore("task", {
               title
               description
               status
+              dueDate
               assignee {
                 id
                 name
@@ -129,6 +130,7 @@ export const useTaskStore = defineStore("task", {
               title
               description
               status
+              dueDate
               assignee {
                 id
                 name
@@ -171,6 +173,7 @@ export const useTaskStore = defineStore("task", {
               title
               description
               status
+              dueDate
               assignee {
                 id
                 name
@@ -202,6 +205,7 @@ export const useTaskStore = defineStore("task", {
             title
             description
             status
+            dueDate
             assignee {
               id
               name
@@ -355,6 +359,7 @@ export const useTaskStore = defineStore("task", {
         this.loading = false;
       }
     },
+
     async fetchProjectById(projectId) {
       try {
         const query = gql`
@@ -372,6 +377,38 @@ export const useTaskStore = defineStore("task", {
         return res.project;
       } catch (err) {
         console.error("Error fetching project by ID:", err);
+        throw err;
+      }
+    },
+    async fetchTasksByProject(projectId) {
+      try {
+        const authStore = useAuthStore(); // ← Add this line
+        const client = this.getClient();
+        const query = gql`
+          query TasksByProject($projectId: ID!) {
+            tasks(projectId: $projectId, status: null) {
+              items {
+                id
+                title
+                status
+                assignee {
+                  id
+                  name
+                }
+                project {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        `;
+        const data = await client.request(query, { projectId });
+        this.tasks = data.tasks.items.filter(
+          (t) => t.assignee?.id === authStore.user?.id
+        );
+      } catch (err) {
+        console.error(err);
         throw err;
       }
     },

@@ -23,38 +23,40 @@ export default route(function ({ store }) {
 
   Router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore(store);
-
     const token = localStorage.getItem("token");
 
     if (token && !authStore.user) {
       try {
         await authStore.fetchMe();
       } catch (error) {
+        console.error("Invalid token:", error);
         authStore.token = null;
         localStorage.removeItem("token");
-        return next("/auth");
+        return next("/");
       }
     }
 
-    const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+    const requiresAuth = to.matched.some((r) => r.meta.requiresAuth);
+    const requiresGuest = to.matched.some((r) => r.meta.requiresGuest);
     const isLoggedIn = !!authStore.token;
     const userRole = authStore.user?.role;
 
     if (requiresAuth && !isLoggedIn) {
-      return next("/auth?redirect=" + to.fullPath);
+      return next("/?redirect=" + to.fullPath);
+    }
+
+    if (requiresGuest && isLoggedIn) {
+      if (userRole === "ADMIN") return next("/dashboard");
+      if (userRole === "MANAGER") return next("/manager");
+      if (userRole === "MEMBER") return next("/my-tasks");
     }
 
     if (isLoggedIn) {
-      if (userRole === "MEMBER" && to.path !== "/my-tasks") {
+      if (userRole === "MEMBER" && to.path === "/dashboard") {
         return next("/my-tasks");
-      } else if (userRole === "ADMIN") {
-        if (to.path === "/my-tasks" || to.path === "/manager") {
-          return next("/dashboard");
-        }
-      } else if (userRole === "MANAGER") {
-        if (to.path === "/my-tasks" || to.path === "/dashboard") {
-          return next("/manager");
-        }
+      }
+      if (userRole === "MANAGER" && to.path === "/dashboard") {
+        return next("/manager");
       }
     }
 

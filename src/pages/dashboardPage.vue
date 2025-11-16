@@ -126,32 +126,10 @@
             <div class="row items-center justify-between q-mb-md">
               <q-icon name="person" size="sm" class="q-mr-sm text-purple-8" />
               <div class="text-subtitle1">
-                <span v-if="currentView === 'teams'">Your Boards</span>
+                <span v-if="currentView === 'all-projects'">Your Boards</span>
                 <span v-else>All Projects</span>
               </div>
               <div>
-                <q-btn
-                  v-if="currentView === 'teams'"
-                  label="All Projects"
-                  color="purple-8"
-                  rounded
-                  unelevated
-                  size="md"
-                  icon="view_list"
-                  @click="showAllProjects"
-                  class="q-mr-sm"
-                />
-                <q-btn
-                  v-else
-                  label="Your Boards"
-                  color="purple-8"
-                  rounded
-                  unelevated
-                  size="md"
-                  icon="people"
-                  @click="showTeamBoards"
-                  class="q-mr-sm"
-                />
                 <q-btn
                   label="New Project"
                   color="purple-8"
@@ -371,7 +349,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
-
+    <!-- TODO: -->
     <q-dialog v-model="manageMembersDialog" persistent>
       <q-card style="min-width: 400px; border-radius: 20px">
         <q-card-section>
@@ -461,20 +439,12 @@ const teamMembersDialog = ref(false);
 const selectedTeam = ref(null);
 
 const selectedTeamId = ref(null);
-const currentView = ref("teams");
+const currentView = ref("all-projects");
 
 const newProject = reactive({
   name: "",
   description: "",
 });
-const showTeamBoards = () => {
-  currentView.value = "teams";
-};
-
-const showAllProjects = () => {
-  currentView.value = "all-projects";
-};
-
 const showTeamMembers = (team) => {
   selectedTeam.value = team;
   teamMembersDialog.value = true;
@@ -483,7 +453,7 @@ const showTeamMembers = (team) => {
 const newTeamName = ref("");
 const formatDate = useDateFormat(useNow(), "dddd MMMM D YYYY");
 
-const users = computed(() => authStore.getUsers);
+const users = ref([]);
 
 const localUsers = ref([]);
 const originalRoles = ref({});
@@ -576,8 +546,6 @@ const saveTeam = async () => {
   }
 };
 
-
-
 const logout = () => {
   authStore.token = null;
   authStore.user = null;
@@ -614,24 +582,28 @@ const updateUserRole = async (userId, newRole) => {
 
 onMounted(async () => {
   await authStore.fetchMe();
-  if (authStore.isLoggedIn && authStore.user?.role === "ADMIN") {
+
+  if (authStore.isLoggedIn &&
+      (authStore.user?.role === "ADMIN" || authStore.user?.role === "MANAGER")) {
     try {
       await authStore.fetchAllUsers();
+      users.value = await authStore.getUsers;
     } catch (error) {
       console.error("Failed to fetch all users:", error);
       $q.notify({
         color: "negative",
         position: "top",
-        message: "Failed to fetch user list. Are you an admin?",
+        message: "Failed to fetch user list. Are you an admin or manager?",
       });
     }
   }
-  await teamStore.fetchTeams();
 
+  await teamStore.fetchTeams();
   if (teamStore.teams.length > 0) {
     selectedTeamId.value = teamStore.teams[0].id;
   }
 });
+
 
 const manageMembersDialog = ref(false);
 const newMembersToAdd = ref([]);
@@ -679,49 +651,46 @@ const closeManageDialog = () => {
   manageMembersDialog.value = false;
   newMembersToAdd.value = [];
 };
-
 const allProjectsDialog = ref(false);
 
 const allProjects = computed(() => {
   const projects = [];
   teamStore.teams.forEach((team) => {
-    if (team.projects) {
-      projects.push(...team.projects);
+    if (team.projects && Array.isArray(team.projects)) {
+      team.projects.forEach((project) => {
+        projects.push({
+          ...project,
+          team: {
+            id: team.id,
+            name: team.name,
+          },
+        });
+      });
     }
   });
   return projects;
 });
 </script>
 
-<style>
+<style scoped>
 html,
 body {
   margin: 0;
   padding: 0;
   background-color: #f0f0f0;
+  height: 100%;
   overflow-x: hidden;
 }
+
+.q-page {
+  min-height: 100vh;
+  /* overflow-y: auto; */
+}
+
 .tabs {
-  width: 100vw;
-  height: 600px;
-  z-index: 1;
-}
-li {
-  list-style-type: none;
-}
-.q-table {
-  background: #fff;
-  border-radius: 8px;
-}
-.q-table .q-tr {
-  transition: background 0.2s;
-}
-.q-table .q-tr:hover {
-  background: #f5f5f5;
-}
-h6 {
-  margin: 0;
-  padding: 10px;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 2rem;
 }
 
 .people-table {
@@ -729,9 +698,9 @@ h6 {
   border-collapse: collapse;
   margin: 16px 0;
   border-radius: 12px;
-  overflow: hidden;
   background: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  font-size: 0.9rem;
 }
 
 .people-table th,
@@ -739,6 +708,7 @@ h6 {
   padding: 12px;
   text-align: left;
   border-bottom: 1px solid #ddd;
+  white-space: nowrap;
 }
 
 .people-table thead th {
@@ -757,79 +727,109 @@ h6 {
   transition: background 0.2s ease;
 }
 
-.status-select {
-  min-width: 160px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  transition: all 0.2s ease;
-  cursor: pointer;
-  appearance: none;
-  background-image: url("data:image/svg+xml;utf8,<svg fill='none' stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'><path d='M19 9l-7 7-7-7'></path></svg>");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 16px 16px;
-}
-
-.status-select:hover {
-  border-color: #a855f7;
-  box-shadow: 0 2px 6px rgba(168, 85, 247, 0.2);
-}
-
-.status-select:focus {
-  outline: none;
-  border-color: #9333ea;
-  box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.3);
-}
-.status-select option {
-  font-weight: 500;
-  padding: 6px 12px;
-}
-
-.option-bad {
-  color: #dc2626;
-  background: #fee2e2;
-}
-
-.option-good {
-  color: #16a34a;
-  background: #dcfce7;
-}
-
-.option-excellent {
-  color: #2563eb;
-  background: #dbeafe;
-}
-
-.create-account {
-  display: inline-block;
-  color: #007bff;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: color 0.2s;
-  padding: 0%;
-}
-.create-account:hover {
-  color: #0056b3;
-  text-decoration: none;
-}
-.selectmenu {
-  border-radius: 12px;
-  background: #ece0f7;
-}
-.mySelect {
-  max-width: 200px;
-}
 .liTask {
   border: #e475f3 solid 2px;
   padding: 6px;
   border-radius: 15px;
   width: fit-content;
+  margin: 4px;
+  font-size: 0.9rem;
+}
+
+.mySelect {
+  max-width: 200px;
+}
+
+.selectmenu {
+  border-radius: 12px;
+  background: #ece0f7;
+}
+
+.q-btn {
+  transition: all 0.2s ease-in-out;
+}
+
+.q-btn:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 1024px) {
+  .tabs {
+    padding: 1rem;
+  }
+
+  .people-table th,
+  .people-table td {
+    font-size: 0.85rem;
+    padding: 8px;
+  }
+
+  .flex-center {
+    flex-direction: column !important;
+  }
+
+  .shadow-8.rounded-borders.q-pa-md.bg-white {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .column.q-mr-xl {
+    margin-right: 0 !important;
+    width: 100%;
+  }
+
+  .flex.column.q-pa-sm {
+    width: 100% !important;
+  }
+
+  .liTask {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .tabs {
+    padding: 0.5rem;
+  }
+
+  .people-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    border-radius: 8px;
+  }
+
+  .people-table th,
+  .people-table td {
+    padding: 6px 8px;
+  }
+
+  .q-page > div:first-child {
+    flex-direction: column;
+    gap: 10px;
+    height: auto !important;
+    padding: 1rem !important;
+    text-align: center;
+  }
+
+  .q-page > div:first-child h5 {
+    font-size: 1.1rem;
+  }
+
+  .q-page > div:first-child p {
+    font-size: 0.9rem;
+  }
+
+  .q-btn {
+    font-size: 0.8rem;
+  }
+
+  .text-subtitle1 {
+    font-size: 0.9rem;
+  }
+
+  .q-card {
+    min-width: 100% !important;
+  }
 }
 </style>

@@ -5,23 +5,7 @@
     </div>
 
     <q-card flat bordered class="q-pa-md q-mb-md rounded-borders shadow-20">
-      <div class="flex flex-center row items-center q-gutter-sm q-ma-md">
-        <!-- <q-input
-          v-model="newColumnTitle"
-          label="New column"
-          dense
-          outlined
-          class="col-12 col-sm-4 shadow-20 rounded-borders"
-        />
-        <q-btn
-          color="purple-5"
-          class="shadow-20 rounded-borders"
-          flat
-          icon="add"
-          label="Add"
-          @click="addColumn"
-        /> -->
-      </div>
+      <div class="flex flex-center row items-center q-gutter-sm q-ma-md"></div>
     </q-card>
     <div class="row q-col-gutter-md no-wrap scroll" style="overflow-x: auto">
       <div
@@ -68,7 +52,7 @@
           </div>
 
           <q-form @submit.prevent="addTask(col.id)">
-            <div class="row items-center q-gutter-sm q-mb-sm">
+            <div class="row items-center q-gutter-sm q-mb-sm q-my-lg">
               <q-input
                 v-model="newTaskTitle[col.id]"
                 dense
@@ -112,94 +96,84 @@
         </q-card>
       </div>
     </div>
+
+    <q-dialog v-model="taskopen">
+      <q-card flat bordered style="min-width: 400px" class="rounded-borders">
+        <q-card-section class="q-pa-lg">
+          <div class="text-h6 text-purple-6 q-pa-md">
+            <p>Task: {{ selecttass?.title }}</p>
+          </div>
+
+          <q-input
+            dense
+            outlined
+            v-model="selecttass.title"
+            label="Title"
+            class="q-mb-sm"
+          />
+
+          <q-input
+            dense
+            outlined
+            v-model="selecttass.description"
+            label="Description"
+            autogrow
+            type="textarea"
+            class="q-mb-sm"
+          />
+
+          <q-select
+            dense
+            outlined
+            v-model="selecttass.status"
+            :options="['TODO', 'IN_PROGRESS', 'DONE']"
+            label="Status"
+            class="col-6"
+          />
+
+          <q-select
+            dense
+            outlined
+            v-model="selecttass.assigneeId"
+            :options="teamMembers"
+            option-value="id"
+            option-label="name"
+            emit-value
+            map-options
+            label="Assignee"
+            class="q-mb-sm"
+          />
+
+          <q-input
+            dense
+            outlined
+            v-model="selecttass.dueDate"
+            label="Due Date"
+            mask="####-##-##"
+            hint="Format: YYYY-MM-DD"
+            class="q-mb-sm"
+          >
+            <template v-slot:append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy
+                  cover
+                  transition-show="scale"
+                  transition-hide="scale"
+                >
+                  <q-date v-model="selecttass.dueDate" mask="YYYY-MM-DD" />
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Close" v-close-popup />
+          <q-btn flat label="Save" color="primary" @click="saveTask" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
-
-  <q-dialog v-model="taskopen">
-    <q-card flat bordered style="min-width: 400px" class="rounded-borders">
-      <q-card-section class="q-pa-lg">
-        <div class="text-h6 text-purple-6 q-pa-md">
-          <p>Task: {{ selecttass?.title }}</p>
-        </div>
-
-        <q-input
-          dense
-          outlined
-          v-model="selecttass.title"
-          label="Title"
-          class="q-mb-sm"
-        />
-
-        <q-input
-          dense
-          outlined
-          v-model="selecttass.description"
-          label="Description"
-          autogrow
-          type="textarea"
-          class="q-mb-sm"
-        />
-
-        <q-select
-          dense
-          outlined
-          v-model="selecttass.status"
-          :options="['TODO', 'IN_PROGRESS', 'DONE']"
-          label="Status"
-          class="col-6"
-        />
-
-        <q-select
-          dense
-          outlined
-          v-model="selecttass.assigneeId"
-          :options="teamMembers"
-          option-value="id"
-          option-label="name"
-          emit-value
-          map-options
-          label="Assignee"
-          class="q-mb-sm"
-        />
-
-        <q-input
-          dense
-          outlined
-          v-model="selecttass.dueDate"
-          label="Due Date"
-          mask="####-##-##"
-          hint="Format: YYYY-MM-DD"
-          class="q-mb-sm"
-        >
-          <template v-slot:append>
-            <q-icon name="event" class="cursor-pointer">
-              <q-popup-proxy
-                cover
-                transition-show="scale"
-                transition-hide="scale"
-              >
-                <q-date v-model="selecttass.dueDate" mask="YYYY-MM-DD" />
-              </q-popup-proxy>
-            </q-icon>
-          </template>
-        </q-input>
-
-        <!-- <q-input
-          dense
-          outlined
-          v-model="selecttass.comments"
-          label="Comments"
-          autogrow
-          type="textarea"
-          class="q-mb-sm"
-        /> -->
-      </q-card-section>
-
-      <q-card-actions align="right">
-        <q-btn flat label="Close" v-close-popup />
-        <q-btn flat label="Save" color="primary" @click="saveTask" />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
 </template>
 
 <script setup>
@@ -232,7 +206,6 @@ const newTaskTitle = reactive({});
 
 const projectTeamId = ref(null);
 const teamMembers = ref([]);
-
 
 onMounted(async () => {
   if (projectId) {
@@ -295,8 +268,6 @@ function groupTasksByStatus() {
   });
 }
 
-function persist() {}
-
 async function addTask(columnId) {
   const title = newTaskTitle[columnId]?.trim();
   if (!title) return;
@@ -312,7 +283,12 @@ async function addTask(columnId) {
       },
     });
     newTaskTitle[columnId] = "";
-    $q.notify({ type: "positive", message: "Task created successfully." });
+
+    $q.notify({
+      type: "positive",
+      message: `Task **'${newTask.title}'** created successfully.`,
+      html: true,
+    });
   } catch (error) {
     $q.notify({ type: "negative", message: "Failed to create task." });
   }
@@ -323,16 +299,20 @@ async function removeTask(columnId, taskId) {
     await taskStore.deleteTask(taskId);
     $q.notify({ type: "positive", message: "Task deleted successfully." });
   } catch (error) {
-    $q.notify({ type: "negative", message: "Failed to delete task." });
+    $q.notify({ type: "#bbdefb", message: "Failed to delete task." });
   }
 }
 
 async function openTask(task) {
   try {
     const fullTask = await taskStore.fetchTask(task.id);
+
     selecttass.value = {
       ...fullTask,
       assigneeId: fullTask.assignee ? fullTask.assignee.id : null,
+      dueDate: fullTask.dueDate
+        ? new Date(Number(fullTask.dueDate)).toISOString().split("T")[0]
+        : null,
     };
     taskopen.value = true;
   } catch (error) {
@@ -354,11 +334,15 @@ async function saveTask() {
         description: selecttass.value.description,
         status: selecttass.value.status,
         assigneeId: selecttass.value.assigneeId,
+        dueDate: selecttass.value.dueDate
+          ? new Date(selecttass.value.dueDate).toISOString()
+          : null,
       },
     });
 
     taskopen.value = false;
     $q.notify({ type: "positive", message: "Task updated successfully." });
+    console.log(selecttass.value.dueDate);
   } catch (error) {
     $q.notify({ type: "negative", message: "Failed to save changes." });
   }
@@ -380,12 +364,30 @@ function onTaskChange(event) {
 }
 
 async function updateTaskStatus(taskId, newStatus) {
+  let taskTitle = "Unknown Task";
+
+  for (const col of columns.value) {
+    const task = col.tasks.find((t) => t.id === taskId);
+    if (task) {
+      taskTitle = task.title;
+      break;
+    }
+  }
+
+  const newColumn = columns.value.find((col) => col.id === newStatus);
+  const newColumnTitle = newColumn ? newColumn.title : "an unknown status";
+
   try {
     await taskStore.updateTask({
       taskId,
       input: { status: newStatus },
     });
-    $q.notify({ type: "positive", message: "Task status updated." });
+
+    $q.notify({
+      type: "positive",
+      message: `Task **'${taskTitle}'** moved to **'${newColumnTitle}'**.`,
+      html: true,
+    });
   } catch (error) {
     $q.notify({ type: "negative", message: "Failed to update task status." });
   }
@@ -395,16 +397,81 @@ const columnColors = ["#ffe0b2", "#c8e6c9", "#bbdefb", "#f8bbd0", "#d1c4e9"];
 </script>
 
 <style scoped>
+.q-page {
+  background-color: #f7f9fc;
+}
+
+.q-card.shadow-20 {
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+h4 {
+  color: #6a1b9a;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.scroll {
+  padding-bottom: 20px;
+}
+
 .column-card {
-  border-radius: 12px;
-  padding: 12px;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease-in-out;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+.column-card:hover {
+  transform: translateY(-4px);
+}
+
+.column-card .q-input.text-bold {
+  font-size: 1.25rem;
+  color: #4a148c;
+  padding-left: 0;
+}
+
+.q-form .q-input {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.q-form .q-btn {
+  transition: color 0.2s;
 }
 
 .column-tasks {
   min-height: 40px;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.column-tasks .q-card {
+  border: 1px solid #d1c4e9;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.column-tasks .q-card:hover {
+  box-shadow: 0 4px 12px rgba(179, 157, 219, 0.5);
+  border-color: #9575cd;
 }
 
 .q-btn {
-  border-radius: 10px;
+  border-radius: 8px;
+}
+
+.q-dialog .q-card {
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+.q-dialog .text-h6 {
+  padding: 8px 16px;
+  border-bottom: 2px solid #e1bee7;
+  margin-bottom: 15px;
 }
 </style>

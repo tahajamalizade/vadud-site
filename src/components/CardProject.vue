@@ -11,7 +11,8 @@
     </q-card-section>
 
     <q-card-section class="q-pt-none">
-      {{ project.description }}
+      <h6>{{ project.description }}</h6>
+      <h6>Team: {{ project.team.name }}</h6>
     </q-card-section>
   </q-card>
 </template>
@@ -26,3 +27,11 @@ const props = defineProps({
   },
 });
 </script>
+
+
+<style>
+h6{
+  margin: 0px;
+  padding: 0%;
+}
+</style>

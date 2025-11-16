@@ -295,32 +295,10 @@
               </q-item>
             </q-list>
           </div>
-
-          <div>
-            <div class="text-subtitle1 q-mb-xs">Add New Members</div>
-            <q-select
-              v-model="newMembersToAdd"
-              :options="availableUsers"
-              option-value="id"
-              option-label="name"
-              multiple
-              emit-value
-              map-options
-              label="Select users to add"
-              outlined
-              dense
-            />
-          </div>
         </q-card-section>
 
         <q-card-actions align="right">
-          <q-btn flat label="Cancel" color="grey" @click="closeManageDialog" />
-          <q-btn
-            flat
-            label="Save Changes"
-            color="purple-8"
-            @click="addMembers"
-          />
+          <q-btn flat label="Done" color="grey" @click="closeManageDialog" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -505,26 +483,30 @@ const updateUserRole = async (userId, newRole) => {
 
 onMounted(async () => {
   await authStore.fetchMe();
-  if (authStore.isLoggedIn && authStore.user?.role === "ADMIN") {
+
+  if (
+    authStore.isLoggedIn &&
+    (authStore.user?.role === "ADMIN" || authStore.user?.role === "MANAGER")
+  ) {
     try {
       await authStore.fetchAllUsers();
+      users.value = await authStore.getUsers;
     } catch (error) {
       console.error("Failed to fetch all users:", error);
       $q.notify({
         color: "negative",
         position: "top",
-        message: "Failed to fetch user list. Are you an admin?",
+        message: "Failed to fetch user list. Are you an admin or manager?",
       });
     }
   }
-  await teamStore.fetchTeams();
 
+  await teamStore.fetchTeams();
   if (teamStore.teams.length > 0) {
     selectedTeamId.value = teamStore.teams[0].id;
   }
 });
 
-const manageMembersDialog = ref(false);
 const newMembersToAdd = ref([]);
 
 const availableUsers = computed(() => {
@@ -533,13 +515,6 @@ const availableUsers = computed(() => {
   );
   return authStore.getUsers.filter((user) => !currentMemberIds.has(user.id));
 });
-
-const openManageDialog = (team) => {
-  selectedTeam.value = team;
-  selectedTeamProjects.value = team.projects || [];
-
-  manageMembersDialog.value = true;
-};
 
 const addMembers = async () => {
   if (newMembersToAdd.value.length === 0) {
@@ -568,11 +543,6 @@ const removeMember = async (teamId, userId) => {
   }
 };
 
-const closeManageDialog = () => {
-  manageMembersDialog.value = false;
-  newMembersToAdd.value = [];
-};
-
 const allProjectsDialog = ref(false);
 
 const allProjects = computed(() => {
@@ -584,6 +554,17 @@ const allProjects = computed(() => {
   });
   return projects;
 });
+
+const manageMembersDialog = ref(false);
+
+const openManageDialog = (team) => {
+  selectedTeam.value = team;
+  manageMembersDialog.value = true;
+};
+const closeManageDialog = () => {
+  manageMembersDialog.value = false;
+  newMembersToAdd.value = [];
+};
 </script>
 
 <style>
