@@ -188,18 +188,13 @@ const columnColors = ["#ffe0b2", "#c8e6c9", "#bbdefb", "#f8bbd0", "#d1c4e9"];
 
 onMounted(async () => {
   try {
-    // Fetch tasks only for this project
     await taskStore.fetchTasksByProject(projectId);
 
-    // Filter tasks: only tasks assigned to the logged-in user
     taskStore.tasks = taskStore.tasks.filter(
       (t) => t.assignee?.id === authStore.user?.id
     );
-
-    // Fetch project info (optional, for header)
     project.value = await taskStore.fetchProjectById(projectId);
 
-    // Fetch all users for admin/manager
     if (authStore.user?.role === "ADMIN" || authStore.user?.role === "MANAGER") {
       await authStore.fetchAllUsers();
     }
