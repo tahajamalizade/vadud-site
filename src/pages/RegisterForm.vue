@@ -75,7 +75,7 @@ async function doRegister() {
     });
 
     $q.notify({
-      message: "Registration was great boyy!",
+      message: "Registration succeed boyy!",
       color: "green-4",
       textColor: "green-4",
     });
